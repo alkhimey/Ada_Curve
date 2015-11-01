@@ -46,73 +46,22 @@ package body Bezier is
    end;
    
    
-   --  real^int
-   function Exponentiate (Argument : in     Base_Real_Type;
-			  Exponent : in     Natural) return Base_Real_Type is
-      Result : Base_Real_Type := 1.0;
-   begin
-      for Counter in 1 .. Exponent loop
-	 Result := Result * Argument;
-      end loop;
-      
-      return Result;
-   end Exponentiate;
-   
-
-   
-   -- Implementation based on snipped found in wikipedia
-   -- This implementation is effifient, does not have overflows and 
-   -- does not require real arithmetic. 
-   function Binomial_Coeff( N : in Positive;
-			    I : in Natural) return Natural is
-      
-      Res : Natural := 1;
-      K : Natural;
+   function Eval_De_Castelijau( Control_Points : in Control_Points_Array;
+				T              : in Parametrization_Type) return Point_Type is   
+      Temp_Points : Control_Points_Array := Control_Points;
    begin
       
-      if N = I then
-	 return 1;
-      end if;
-      
-      if I < N-I then
-	 K := I;
-      else
-	 K := N-I;
-      end if;
-      
-      for J in Natural range 0 .. K-1 loop
-	Res := (Res * (N - J)) / (J + 1);
-      end loop;
-      
-      return Res;
-      
-   end;
-
-   
-   function Eval_Bernstein_Basis(N : in Positive;
-				 I : in Natural;
-				 T : in Parametrization_Type) return Base_Real_Type is
-   begin   
+      for I in 1 .. Control_Points'Length - 1 loop	 
+	 for J in Control_Points'First .. Control_Points'Last - I loop
 	 
-      return Base_Real_Type(Binomial_Coeff(N, I)) * Exponentiate(T, I) * Exponentiate(1.0 - T, N - I); 
-      
-   end;
-
-   -- Non recursive implementation using Bernstein polynomials.
-   --
-   function Evaluate( Control_Points : in Control_Points_Array;
-		      T              : in Parametrization_Type) return Point_Type is   
-      Res_Point : Point_Type := ORIGIN_POINT;
-   begin
-      
-      for I in Control_Points'Range loop 
-	 Res_Point := Res_Point + Control_Points(I) * Eval_Bernstein_Basis(Control_Points_Num-1, I-1, T); 	 
+	    Temp_Points(J) := T * Temp_Points(J) + (1.0-T) * Temp_Points(J+1);
+	   
+	 end loop;
       end loop;
+	
+      return Temp_Points(Temp_Points'First);
       
-      return Res_Point;      
-      
-   end;
-   
+   end; 
 begin
    
    

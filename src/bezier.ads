@@ -63,9 +63,7 @@ package Bezier is
    -- Curve functions and procedures
    ---------------------------------
    
-   function Evaluate( Control_Points : in Control_Points_Array;
-		      T              : in Parametrization_Type) return Point_Type;
-
-
+   function Eval_De_Castelijau( Control_Points : in Control_Points_Array;
+				T              : in Parametrization_Type) return Point_Type;
 
 end Bezier;

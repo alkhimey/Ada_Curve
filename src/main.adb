@@ -305,7 +305,7 @@ begin
 	 loop
 	    exit when T > 1.0;
 	    
-	    P := CRV.Evaluate( Draw_Control_Points, T);
+	    P := CRV.Eval_De_Castelijau( Draw_Control_Points, T);	    
 	    
 	    GL.Immediate.Add_Vertex(Token, Vector2'(P(CRV.X), P(CRV.Y)));
 	    T := T + 0.015625; -- Power of 2 required for floating point to reach 1.0 exaclty   
