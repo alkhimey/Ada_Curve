@@ -23,24 +23,32 @@
 --
 
 
-package body Bezier is 
+package body Curve is 
    
    
-   function "+" (Left, Right : Point_Type) return Point_Type is 
+   function "+" (Left, Right : in Point_Type) return Point_Type is 
+      Result : Point_Type;
    begin
-      return (X => Left( X ) + Right ( X ),
-	      Y => Left( Y ) + Right ( Y ));
+      for I in Result'Range loop
+	 Result(I) := Left(I) + Right(I);
+      end loop;
+      
+      return Result;
    end;
    
-   function "*" (Left  : Point_Type; 
-		 Right : Base_Real_Type ) return Point_Type is
-   begin
-      return (X => Right * Left( X ) ,
-	      Y => Right * Left( Y ));
+   function "*" (Left  : in Point_Type; 
+		 Right : in Base_Real_Type ) return Point_Type is
+      Result : Point_Type;
+   begin      
+      for I in Result'Range loop
+	 Result(I) := Right * Left(I);
+      end loop;
+      
+      return Result;
    end;
    
-   function "*" (Left  : Base_Real_Type; 
-		 Right : Point_Type ) return Point_Type is 
+   function "*" (Left  : in Base_Real_Type; 
+		 Right : in Point_Type ) return Point_Type is 
    begin
       return Right * Left;
    end;
@@ -62,11 +70,19 @@ package body Bezier is
       return Temp_Points(Temp_Points'First);
       
    end; 
+   
+   
+   function Eval_De_Boor      ( Control_Points : in Control_Points_Array;
+				Knot_Values    : in Knot_Values_Array;
+				T              : in Parametrization_Type) return Point_Type is
+   begin
+      return ORIGIN_POINT;
+   end;
+   
+   
+   
 begin
-   
-   
 
-   
    null;
    
-end;
+end Curve;

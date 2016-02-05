@@ -22,7 +22,7 @@
 -- 
 --
 
-with Bezier;
+with Curve;
 with Text_IO;
 use Text_IO;
 
@@ -55,8 +55,8 @@ procedure Main is
    use GL.Buffers;
    use type GL.Types.Double;
   
-   package CRV is new Bezier(Base_Real_Type     => GL.Types.Double, 
-			     Control_Points_Num => 5);
+   package CRV is new Curve(Base_Real_Type     => GL.Types.Double, 
+			    Dimension          => 2);
    
    -- Constants
    ------------
@@ -68,9 +68,14 @@ procedure Main is
    
    -- Types
    --------
+   
+   type Algorithm_Type is (De_Castelijau, De_Boor, Catmull_Rom, Unknown);
+   
+   type Control_Polygon_Drawing_Mode_Type is (Full, Polygon_Only, Points_Only, None);
+   
    type Test_Window is new Glfw.Windows.Window with record
       
-      Control_Points : CRV.Control_Points_Array := 
+      Control_Points : CRV.Control_Points_Array(1..5) := 
 	(1 => (CRV.X => 100.0, CRV.Y => 100.0),
 	 2 => (CRV.X => 50.0, CRV.Y => 200.0),
 	 3 => (CRV.X => 100.0, CRV.Y => 300.0),
@@ -86,7 +91,7 @@ procedure Main is
    end record;
    
    -- Procedures and Functions
-   ---------------------------
+   --------------------------- 
    
    overriding
    procedure Init (Object : not null access Test_Window;
@@ -195,9 +200,21 @@ procedure Main is
       end if;
    end Mouse_Button_Changed;
    
+   -- Separate Procedures and Functions
+   ------------------------------------
+   procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
+			Algorithm      : Algorithm_Type  ) is separate;
+   
+   
+   procedure Draw_Control_Polygon(Control_Points : CRV.Control_Points_Array) is separate;
+   
+   procedure Draw_Control_Points(Control_Points : CRV.Control_Points_Array;
+				 Hovered_Point  : Natural := 0;
+				 Selected_Point : Natural := 0) is separate;
+   
    -- Constants
    ------------
-   BASE_TITLE : constant String := "Bezier Curve Test ";
+   BASE_TITLE : constant String := "Curve Test ";
    
  
    -- Variables
@@ -205,7 +222,7 @@ procedure Main is
    
    My_Window : aliased Test_Window;
    
-   Draw_Control_Points : CRV.Control_Points_Array := My_Window.Control_Points;
+   Control_Points_For_Drawing : CRV.Control_Points_Array := My_Window.Control_Points;
    
 begin
    
@@ -226,96 +243,29 @@ begin
       
       if My_Window.Selected_Point = 0 then
 	 
-	 Draw_Control_Points := My_Window.Control_Points;
+	 Control_Points_For_Drawing := My_Window.Control_Points;
 	 
       else
 	 
-	 Draw_Control_Points(My_Window.Selected_Point)(CRV.X) := 
+	 Control_Points_For_Drawing(My_Window.Selected_Point)(CRV.X) := 
 	   My_Window.Control_Points(My_Window.Selected_Point)(CRV.X) + My_Window.Delta_X;
 	 
-	 Draw_Control_Points(My_Window.Selected_Point)(CRV.Y) := 
+	 Control_Points_For_Drawing(My_Window.Selected_Point)(CRV.Y) := 
 	   My_Window.Control_Points(My_Window.Selected_Point)(CRV.Y) + My_Window.Delta_Y;
 	
       end if;
       
-      -- Draw control polygon lines
+      -- Draw the control polygon and points
       --
-      declare
-	 Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Line_Strip);
-	 
-      begin
-	 Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
-	 
-	 for I in Draw_Control_Points'Range loop
-	    GL.Immediate.Add_Vertex(Token, Vector2'
-				      (Draw_Control_Points(I)(CRV.X), 
-				       Draw_Control_Points(I)(CRV.Y)));
-	 end loop;	 
-      end;
+      Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
       
-      -- Draw the control points (as squares)
-      --
-      for I in Draw_Control_Points'Range Loop
-	 
-	 declare
-	    Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Polygon);
-	    
-	    D : constant := 4.0;
-	 begin
-	    
-	    if I = My_Window.Selected_Point then
-	       Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
-	    else
-	       Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.6, 0.6, 0.6, 0.0));
-	    end if;
-	       
-	    GL.Immediate.Add_Vertex(Token, Vector2'
-				      (Draw_Control_Points(I)(CRV.X) + D, 
-				       Draw_Control_Points(I)(CRV.Y) + D));
-	    
-	    GL.Immediate.Add_Vertex(Token, Vector2'
-				      (Draw_Control_Points(I)(CRV.X) - D, 
-				       Draw_Control_Points(I)(CRV.Y) + D));
-	    
-	    GL.Immediate.Add_Vertex(Token, Vector2'
-				      (Draw_Control_Points(I)(CRV.X) - D, 
-				       Draw_Control_Points(I)(CRV.Y) - D));
-	    
-	    GL.Immediate.Add_Vertex(Token, Vector2'
-				      (Draw_Control_Points(I)(CRV.X) + D, 
-				       Draw_Control_Points(I)(CRV.Y) - D));
-
-	    
-	 end;
-      end loop;
-      	  
+      Draw_Control_Points(Control_Points => Control_Points_For_Drawing,
+			  Selected_Point => My_Window.Selected_Point);
+       
       -- Draw the curve
       --    
-      GL.Toggles.Enable(GL.Toggles.Line_Smooth);
+      Draw_Curve(Control_Points_For_Drawing, De_Castelijau);      
       
-      declare
-	 Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Line_Strip);
-	 type Sampling_Range_Type is delta 0.1 range 0.0 .. 0.0;
-	 T : Gl.Types.Double := 0.0;
-	 P : CRV.Point_Type;
-	 
-      begin
-	 Gl.Immediate.Set_Color (GL.Types.Colors.Color'(1.0, 1.0, 0.0, 0.0));
-	 
-	 loop
-	    exit when T > 1.0;
-	    
-	    P := CRV.Eval_De_Castelijau( Draw_Control_Points, T);	    
-	    
-	    GL.Immediate.Add_Vertex(Token, Vector2'(P(CRV.X), P(CRV.Y)));
-	    T := T + 0.015625; -- Power of 2 required for floating point to reach 1.0 exaclty   
-	 end loop;	 
-	 
-      end;
-      
-      GL.Toggles.Disable(GL.Toggles.Line_Smooth);
-      
-           
       GL.Flush;
       Glfw.Windows.Context.Swap_Buffers (My_Window'Access);    
       Glfw.Input.Wait_For_Events;
