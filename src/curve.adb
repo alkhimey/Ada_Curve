@@ -36,6 +36,28 @@ package body Curve is
       return Result;
    end;
    
+   function "-" (Left, Right : in Point_Type) return Point_Type is 
+      Result : Point_Type;
+   begin
+      for I in Result'Range loop
+	 Result(I) := Left(I) - Right(I);
+      end loop;
+      
+      return Result;
+   end;
+   
+   function "-" (Right : in Point_Type) return Point_Type is 
+      Result : Point_Type;
+   begin
+      for I in Result'Range loop
+	 Result(I) := - Right(I);
+      end loop;
+      
+      return Result;
+   end;
+
+   
+   
    function "*" (Left  : in Point_Type; 
 		 Right : in Base_Real_Type ) return Point_Type is
       Result : Point_Type;
@@ -77,6 +99,28 @@ package body Curve is
 				T              : in Parametrization_Type) return Point_Type is
    begin
       return ORIGIN_POINT;
+   end;
+   
+   function Eval_Catmull_Rom ( Control_Points : in Control_Points_Array;
+			       Knot           : in Positive;
+			       T              : in Parametrization_Type) return Point_Type is 
+      
+      P0, P1, P2, P3 : Point_Type;
+      
+   begin
+      
+      P0 := Control_Points( Knot );
+      P1 := Control_Points( Knot + 1 );
+      P2 := Control_Points( Knot + 2 );
+      P3 := Control_Points( Knot + 3 );
+
+	
+      return 0.5 * (
+		    (2.0 * P1) + 
+		      T * (-P0 + P2) + 
+		      T*T * (2.0 * P0 - 5.0 * P1 + 4.0 * P2 - P3) +
+		      T*T*T * (-P0 + 3.0 * P1 - 3.0 * P2 + P3) 
+		   );
    end;
    
    

@@ -1,6 +1,7 @@
 
 --with "OpenGLAda/opengl";
 with "OpenGLAda/opengl-glfw";
+with "OpenGLAda/opengl-ftgl";
 
 project AdaCurve is
   

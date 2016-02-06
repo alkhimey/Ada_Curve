@@ -23,9 +23,10 @@
 --
 
 with Curve;
-with Text_IO;
-use Text_IO;
+with Ada.Text_IO;
+use Ada.Text_IO;
 
+with Ada.Command_Line;
 
 with Glfw.Windows.Context;
 with Glfw.Input.Mouse;
@@ -40,6 +41,9 @@ with GL.Fixed.Matrix;
 with GL.Types;
 with GL.Immediate;
 with GL.Toggles;
+with GL.Raster;
+
+with FTGL.Fonts;
 
 procedure Main is
    
@@ -69,18 +73,18 @@ procedure Main is
    -- Types
    --------
    
-   type Algorithm_Type is (De_Castelijau, De_Boor, Catmull_Rom, Unknown);
+   type Algorithm_Type is (DE_CASTELIJAU, DE_BOOR, CATMULL_ROM);
    
-   type Control_Polygon_Drawing_Mode_Type is (Full, Polygon_Only, Points_Only, None);
    
    type Test_Window is new Glfw.Windows.Window with record
       
-      Control_Points : CRV.Control_Points_Array(1..5) := 
+      Control_Points : CRV.Control_Points_Array(1..6) := 
 	(1 => (CRV.X => 100.0, CRV.Y => 100.0),
-	 2 => (CRV.X => 50.0, CRV.Y => 200.0),
+	 2 => (CRV.X => 50.0,  CRV.Y => 200.0),
 	 3 => (CRV.X => 100.0, CRV.Y => 300.0),
 	 4 => (CRV.X => 500.0, CRV.Y => 400.0),
-	 5 => (CRV.X => 200.0, CRV.Y => 200.0));
+	 5 => (CRV.X => 200.0, CRV.Y => 200.0),
+	 6 => (CRV.X => 0.0,   CRV.Y => 0.0));
       
       
       Original_X, Original_Y : GL.Types.Double := 0.0;
@@ -88,9 +92,11 @@ procedure Main is
       
       
       Selected_Point : Natural := 0;
+      
+      Algorithm : Algorithm_Type := DE_CASTELIJAU;
    end record;
    
-   -- Procedures and Functions
+   -- Overrides
    --------------------------- 
    
    overriding
@@ -109,6 +115,16 @@ procedure Main is
                                    State   : Glfw.Input.Button_State;
                                    Mods    : Glfw.Input.Keys.Modifiers);
    
+   overriding
+   procedure Key_Changed (Object   : not null access Test_Window;
+			  Key      : Glfw.Input.Keys.Key;
+			  Scancode : Glfw.Input.Keys.Scancode;
+			  Action   : Glfw.Input.Keys.Action;
+			  Mods     : Glfw.Input.Keys.Modifiers);
+   
+   -- Procedures and Functions
+   --------------------------- 
+   
    procedure Init (Object : not null access Test_Window;
                    Width, Height : Glfw.Size;
                    Title   : String;
@@ -120,6 +136,7 @@ procedure Main is
       Upcast.Init (Width, Height, Title, Monitor, Share);
       Object.Enable_Callback (Glfw.Windows.Callbacks.Mouse_Position);
       Object.Enable_Callback (Glfw.Windows.Callbacks.Mouse_Button);
+      Object.Enable_Callback (Glfw.Windows.Callbacks.Key);
    end Init;
    
    procedure Mouse_Position_Changed (Object : not null access Test_Window;
@@ -190,15 +207,40 @@ procedure Main is
 		  Object.Selected_Point := I;
 		  Object.Delta_X := 0.0;
 		  Object.Delta_Y := 0.0;
-	    
-		  --Natural_IO.Put(I);
-		  --New_Line;
 		  
 	       end if;
 	    end loop;
 	 end if;
       end if;
    end Mouse_Button_Changed;
+   
+   procedure Key_Changed (Object   : not null access Test_Window;
+			  Key      : Glfw.Input.Keys.Key;
+			  Scancode : Glfw.Input.Keys.Scancode;
+			  Action   : Glfw.Input.Keys.Action;
+			  Mods     : Glfw.Input.Keys.Modifiers) is
+      use type Glfw.Input.Keys.Key;
+      use type Glfw.Input.Keys.Action;
+   begin
+      if Key = Glfw.Input.Keys.Escape then
+	 Object.Set_Should_Close (True);
+      end if;
+      
+      if Key = Glfw.Input.Keys.A and then Action = Glfw.Input.Keys.Press then
+	 
+	 if Object.Algorithm = Algorithm_Type'Last then 
+	    Object.Algorithm := Algorithm_Type'First;
+	 else
+	    Object.Algorithm := Algorithm_Type'Succ(Object.Algorithm);
+	 end if;
+	 
+	 if Object.Algorithm = DE_BOOR then
+	    Object.Algorithm := CATMULL_ROM;
+	 end if;
+	 
+	 
+      end if;
+   end Key_Changed;
    
    -- Separate Procedures and Functions
    ------------------------------------
@@ -224,18 +266,45 @@ procedure Main is
    
    Control_Points_For_Drawing : CRV.Control_Points_Array := My_Window.Control_Points;
    
+   Info_Font : FTGL.Fonts.Polygon_Font;
+   
+   Font_Loaded : Boolean := False;
+   
 begin
    
    Glfw.Init;
---   Enable_Print_Errors;
    
    Glfw.Windows.Hints.Set_Resizable(False);
    My_Window'Access.Init (WINDOW_WIDTH, WINDOW_HEIGHT, Base_Title);
    Glfw.Windows.Context.Make_Current (My_Window'Access);
 
    Projection.Load_Identity;
-   Projection.Apply_Orthogonal (0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
+   Projection.Apply_Orthogonal (0.0, Double(WINDOW_WIDTH), Double(WINDOW_HEIGHT), 0.0, -1.0, 1.0);
 
+   -- Load and setup font
+   --
+   if Ada.Command_Line.Argument_Count /= 1 then
+      Put_Line ("A path to a font file was not provided as an argument.");
+   else
+      declare
+	 Font_Path : constant String := Ada.Command_Line.Argument (1);
+      begin
+	 Info_Font.Load (Font_Path);
+	 Info_Font.Set_Font_Face_Size (18);
+	 
+	 Font_Loaded := True;
+      exception
+	 when FTGL.FTGL_Error =>
+	    Ada.Text_IO.Put_Line ("Could not load font file " & Font_Path);
+      end;
+   end if;
+   
+   
+   
+   
+   
+   -- Main events loop
+   --
    while not My_Window'Access.Should_Close loop
       
       Clear (Buffer_Bits'(others => True));
@@ -255,16 +324,42 @@ begin
 	
       end if;
       
+      --  Output info to screen
+      --
+      if Font_Loaded then
+	 
+	 Modelview.Push;
+	 
+	 -- Set origin at bottom left 
+	 Modelview.Apply_Multiplication((( 1.0,  0.0, 0.0, 0.0),
+					 ( 0.0, -1.0, 0.0, 0.0),
+					 ( 0.0,  0.0, 1.0, 0.0),
+					 ( 0.0,  0.0, 0.0, 1.0) ));
+	 Modelview.Apply_Translation (0.0, -600.0, 0.0);
+	 
+	 
+	 
+	 Gl.Immediate.Set_Color (GL.Types.Colors.Color'(1.0, 1.0, 1.0, 0.0));
+	 Modelview.Apply_Translation (15.0, -Double(Info_Font.Descender), 0.0);
+	 Info_Font.Render (Algorithm_Type'Image(My_Window.Algorithm), (Front => True, others => False));
+	 
+	 Modelview.Pop;
+      end if;
+      
+
+      
       -- Draw the control polygon and points
       --
       Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
       
       Draw_Control_Points(Control_Points => Control_Points_For_Drawing,
 			  Selected_Point => My_Window.Selected_Point);
-       
+      
+      
+      
       -- Draw the curve
       --    
-      Draw_Curve(Control_Points_For_Drawing, De_Castelijau);      
+      Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm);      
       
       GL.Flush;
       Glfw.Windows.Context.Swap_Buffers (My_Window'Access);    

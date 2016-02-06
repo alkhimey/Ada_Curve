@@ -56,6 +56,8 @@ package Curve is
    -----------------------
    
    function "+" (Left, Right : Point_Type) return Point_Type;
+   function "-" (Left, Right : Point_Type) return Point_Type;
+   function "-" (Right : Point_Type) return Point_Type;
    function "*" (Left  : Point_Type; 
 		 Right : Base_Real_Type ) return Point_Type;
    
@@ -77,7 +79,9 @@ package Curve is
 				Knot_Values    : in Knot_Values_Array;
 				T              : in Parametrization_Type) return Point_Type;
    
-   
+   function Eval_Catmull_Rom ( Control_Points : in Control_Points_Array;
+			       Knot           : in Positive;
+			       T              : in Parametrization_Type) return Point_Type;
    
    
 end Curve;
