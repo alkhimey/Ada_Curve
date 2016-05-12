@@ -1,6 +1,6 @@
 --  The MIT License (MIT)
 --
---  Copyright (c) 2015 artium@nihamkin.com
+--  Copyright (c) 2016 artium@nihamkin.com
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@ with Glfw.Input.Mouse;
 with Glfw.Input.Keys;
 with Glfw.Monitors;
 with Glfw.Windows.Hints;
+with Glfw.Errors;
 with Glfw;
 
 with GL.Types.Colors;
@@ -42,6 +43,7 @@ with GL.Types;
 with GL.Immediate;
 with GL.Toggles;
 with GL.Raster;
+
 
 with FTGL.Fonts;
 
@@ -94,6 +96,8 @@ procedure Main is
       Selected_Point : Natural := 0;
       
       Algorithm : Algorithm_Type := DE_CASTELIJAU;
+      
+      Help_Overlay_Required : Boolean := False;
    end record;
    
    -- Overrides
@@ -226,33 +230,27 @@ procedure Main is
 	 Object.Set_Should_Close (True);
       end if;
       
-      if Key = Glfw.Input.Keys.A and then Action = Glfw.Input.Keys.Press then
-	 
-	 if Object.Algorithm = Algorithm_Type'Last then 
-	    Object.Algorithm := Algorithm_Type'First;
-	 else
-	    Object.Algorithm := Algorithm_Type'Succ(Object.Algorithm);
+      if Action = Glfw.Input.Keys.Press then
+	 if    Key = Glfw.Input.Keys.Q or else Key = Glfw.Input.Keys.ESCAPE then
+	    Object.Set_Should_Close (True);
+	 elsif Key = Glfw.Input.Keys.H then
+	    Object.Help_Overlay_Required := True;
+	 elsif Key = Glfw.Input.Keys.A then
+	    if Object.Algorithm = Algorithm_Type'Last then 
+	       Object.Algorithm := Algorithm_Type'First;
+	    else
+	       Object.Algorithm := Algorithm_Type'Succ(Object.Algorithm);
+	    end if;
 	 end if;
-	 
-	 if Object.Algorithm = DE_BOOR then
-	    Object.Algorithm := CATMULL_ROM;
-	 end if;
-	 
-	 
       end if;
-   end Key_Changed;
-   
-   -- Separate Procedures and Functions
-   ------------------------------------
-   procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
-			Algorithm      : Algorithm_Type  ) is separate;
-   
-   
-   procedure Draw_Control_Polygon(Control_Points : CRV.Control_Points_Array) is separate;
-   
-   procedure Draw_Control_Points(Control_Points : CRV.Control_Points_Array;
-				 Hovered_Point  : Natural := 0;
-				 Selected_Point : Natural := 0) is separate;
+      
+      if Action = Glfw.Input.Keys.Release then 
+      	 if Key = Glfw.Input.Keys.H then
+	    Object.Help_Overlay_Required := False;
+	 end if;
+      end if;
+      
+   end Key_Changed; 
    
    -- Constants
    ------------
@@ -270,10 +268,23 @@ procedure Main is
    
    Font_Loaded : Boolean := False;
    
+   
+   -- Separate Procedures and Functions
+   ------------------------------------
+   procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
+			Algorithm      : Algorithm_Type  ) is separate;
+   
+   procedure Draw_Control_Polygon(Control_Points : CRV.Control_Points_Array) is separate;
+   
+   procedure Draw_Control_Points(Control_Points : CRV.Control_Points_Array;
+				 Hovered_Point  : Natural := 0;
+				 Selected_Point : Natural := 0) is separate;
+   
+   procedure Draw_Help_Overlay is separate;
+
 begin
    
    Glfw.Init;
-   
    Glfw.Windows.Hints.Set_Resizable(False);
    My_Window'Access.Init (WINDOW_WIDTH, WINDOW_HEIGHT, Base_Title);
    Glfw.Windows.Context.Make_Current (My_Window'Access);
@@ -301,15 +312,12 @@ begin
    
    
    
-   
-   
    -- Main events loop
    --
    while not My_Window'Access.Should_Close loop
       
       Clear (Buffer_Bits'(others => True));
-      
-      
+            
       if My_Window.Selected_Point = 0 then
 	 
 	 Control_Points_For_Drawing := My_Window.Control_Points;
@@ -335,10 +343,8 @@ begin
 					 ( 0.0, -1.0, 0.0, 0.0),
 					 ( 0.0,  0.0, 1.0, 0.0),
 					 ( 0.0,  0.0, 0.0, 1.0) ));
-	 Modelview.Apply_Translation (0.0, -600.0, 0.0);
-	 
-	 
-	 
+	 Modelview.Apply_Translation (0.0, - Double(WINDOW_HEIGHT), 0.0);
+	 	 
 	 Gl.Immediate.Set_Color (GL.Types.Colors.Color'(1.0, 1.0, 1.0, 0.0));
 	 Modelview.Apply_Translation (15.0, -Double(Info_Font.Descender), 0.0);
 	 Info_Font.Render (Algorithm_Type'Image(My_Window.Algorithm), (Front => True, others => False));
@@ -347,7 +353,6 @@ begin
       end if;
       
 
-      
       -- Draw the control polygon and points
       --
       Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
@@ -356,14 +361,27 @@ begin
 			  Selected_Point => My_Window.Selected_Point);
       
       
-      
       -- Draw the curve
       --    
       Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm);      
       
+      
+      -- Draw help overlay on top of everything else
+      --
+      if My_Window.Help_Overlay_Required then 
+	 
+	 Draw_Help_Overlay;
+	 
+      end if;
+      
+      
+      -- Maintanace operations 
+      --
       GL.Flush;
       Glfw.Windows.Context.Swap_Buffers (My_Window'Access);    
       Glfw.Input.Wait_For_Events;
+      
+      
       
    end loop;
 
