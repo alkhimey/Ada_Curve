@@ -98,6 +98,8 @@ procedure Main is
       Algorithm : Algorithm_Type := DE_CASTELIJAU;
       
       Help_Overlay_Required : Boolean := False;
+      
+      Display_Control_Polygon : Boolean := True;
    end record;
    
    -- Overrides
@@ -191,7 +193,7 @@ procedure Main is
 	    
 	    Object.Selected_Point := 0;
 	    
-	 else 
+	 else
 	    
 	    Object.Selected_Point := 0;
 	    
@@ -232,21 +234,41 @@ procedure Main is
       
       if Action = Glfw.Input.Keys.Press then
 	 if    Key = Glfw.Input.Keys.Q or else Key = Glfw.Input.Keys.ESCAPE then
+	    
 	    Object.Set_Should_Close (True);
+	    
 	 elsif Key = Glfw.Input.Keys.H then
+	    
 	    Object.Help_Overlay_Required := True;
+	    
 	 elsif Key = Glfw.Input.Keys.A then
+	    
 	    if Object.Algorithm = Algorithm_Type'Last then 
 	       Object.Algorithm := Algorithm_Type'First;
 	    else
 	       Object.Algorithm := Algorithm_Type'Succ(Object.Algorithm);
+	    end if;
+	    
+	 elsif Key = Glfw.Input.Keys.P then
+	    
+	    Object.Display_Control_Polygon := not Object.Display_Control_Polygon;
+	    
+	    if Object.Display_Control_Polygon then
+	       Object.Enable_Callback (Glfw.Windows.Callbacks.Mouse_Position);
+	       Object.Enable_Callback (Glfw.Windows.Callbacks.Mouse_Button);
+	    else
+	       Object.Selected_Point := 0;
+	       Object.Disable_Callback (Glfw.Windows.Callbacks.Mouse_Position);
+	       Object.Disable_Callback (Glfw.Windows.Callbacks.Mouse_Button);
 	    end if;
 	 end if;
       end if;
       
       if Action = Glfw.Input.Keys.Release then 
       	 if Key = Glfw.Input.Keys.H then
+	    
 	    Object.Help_Overlay_Required := False;
+	    
 	 end if;
       end if;
       
@@ -355,11 +377,12 @@ begin
 
       -- Draw the control polygon and points
       --
-      Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
-      
-      Draw_Control_Points(Control_Points => Control_Points_For_Drawing,
-			  Selected_Point => My_Window.Selected_Point);
-      
+      if My_Window.Display_Control_Polygon then
+	 Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
+	 
+	 Draw_Control_Points(Control_Points => Control_Points_For_Drawing,
+			     Selected_Point => My_Window.Selected_Point);
+      end if;
       
       -- Draw the curve
       --    
@@ -375,7 +398,7 @@ begin
       end if;
       
       
-      -- Maintanace operations 
+      -- Window maintanace operations 
       --
       GL.Flush;
       Glfw.Windows.Context.Swap_Buffers (My_Window'Access);    
