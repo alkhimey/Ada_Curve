@@ -28,3 +28,5 @@ gprbuild  -p -P adacurve.gpr -XWindowing_System=x11 -XGLFW_Version=3
 
 Path to the font file is optional and is required only for displaying the text on the screen.
 
+To change between different curves use the ```A``` keyboard button.
+
