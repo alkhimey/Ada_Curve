@@ -37,7 +37,7 @@ begin
       
       Modelview.Apply_Translation (15.0, -Double(Info_Font.Line_Height), 0.0);
 
-      Info_Font.Render ("A -Cycle algorithms", (Front => True, others => False));
+      Info_Font.Render ("A - Cycle algorithms", (Front => True, others => False));
       
       Modelview.Apply_Translation ( 0.0, -Double(Info_Font.Line_Height), 0.0);  
       
@@ -45,8 +45,7 @@ begin
       
       Modelview.Apply_Translation ( 0.0, -Double(Info_Font.Line_Height), 0.0);  
       
-      
-      Info_Font.Render ("Q -Quit", (Front => True, others => False));
+      Info_Font.Render ("Q - Quit", (Front => True, others => False));
       
       Modelview.Pop;
       
