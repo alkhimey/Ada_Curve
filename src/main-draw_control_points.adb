@@ -20,6 +20,8 @@ begin
 	 
 	 if I = Selected_Point then
 	    Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
+	 elsif I = Hovered_Point then    
+	    Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.0, 0.5, 0.0, 0.0));
 	 else
 	    Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.6, 0.6, 0.6, 0.0));
 	 end if;

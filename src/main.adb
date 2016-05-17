@@ -28,6 +28,8 @@ use Ada.Text_IO;
 
 with Ada.Command_Line;
 
+with Ada.Strings.Fixed;
+
 with Glfw.Windows.Context;
 with Glfw.Input.Mouse;
 with Glfw.Input.Keys;
@@ -71,6 +73,8 @@ procedure Main is
    WINDOW_WIDTH : constant := 800;
    WINDOW_HEIGHT : constant := 600;
    
+   MAX_NUMBER_OF_CONTROL_POINTS : constant Positive := 99;
+   MIN_NUMBER_OF_CONTROL_POINTS : constant Positive := 4; -- For Catmull-Rom
    
    -- Types
    --------
@@ -80,20 +84,22 @@ procedure Main is
    
    type Test_Window is new Glfw.Windows.Window with record
       
-      Control_Points : CRV.Control_Points_Array(1..6) := 
+      Control_Points : CRV.Control_Points_Array(1..MAX_NUMBER_OF_CONTROL_POINTS) := 
 	(1 => (CRV.X => 100.0, CRV.Y => 100.0),
 	 2 => (CRV.X => 50.0,  CRV.Y => 200.0),
 	 3 => (CRV.X => 100.0, CRV.Y => 300.0),
 	 4 => (CRV.X => 500.0, CRV.Y => 400.0),
 	 5 => (CRV.X => 200.0, CRV.Y => 200.0),
-	 6 => (CRV.X => 0.0,   CRV.Y => 0.0));
+	 6 => (CRV.X => 0.0,   CRV.Y => 0.0),
+	 others => (CRV.X => 0.0,   CRV.Y => 0.0));
       
+      Num_Of_Control_Points : Positive range 1 .. MAX_NUMBER_OF_CONTROL_POINTS := 6;
       
       Original_X, Original_Y : GL.Types.Double := 0.0;
       Delta_X, Delta_Y : GL.Types.Double := 0.0;
       
       
-      Selected_Point : Natural := 0;
+      Selected_Point, Hovered_Point : Natural := 0;
       
       Algorithm : Algorithm_Type := DE_CASTELIJAU;
       
@@ -158,6 +164,21 @@ procedure Main is
 	 Object.Delta_Y := GL.Types.Double (Y) - Object.Original_Y;
 	 
       end if;
+      
+      --  Object.Hovered_Point := 0;
+      
+      --  for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
+	 
+      --  	 -- TODO: Refactor point under mouse selection into  a method
+      --  	 if Object.Control_Points(I)(CRV.X) - 4.0 <= GL.Types.Double(X) and then
+      --  	   GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + 4.0 and then
+      --  	   Object.Control_Points(I)(CRV.Y) - 4.0 <= GL.Types.Double(Y) and then
+      --  	   GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + 4.0     then
+	    
+      --  	    Object.Hovered_Point := I;
+	    
+      --  	 end if;
+      --  end loop;
    end Mouse_Position_Changed;
    
    
@@ -171,13 +192,53 @@ procedure Main is
       use type Glfw.Input.Button_State;
       use type Glfw.Input.Mouse.Coordinate;
       
+      Found_Point   : Natural := 0;
       X, Y    : Glfw.Input.Mouse.Coordinate;
    begin
-      if Button = 0 then
+      
+      Object.Get_Cursor_Pos (X, Y);	    
+      
+      if Button = Glfw.Input.Mouse.Right_Button  and then Object.Selected_Point = 0 and then State = Glfw.Input.Pressed then
 	 
-	 if  State /= Glfw.Input.Pressed then
+	 for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
 	    
-	    Object.Get_Cursor_Pos (X, Y);
+	    if Object.Control_Points(I)(CRV.X) - 4.0 <= GL.Types.Double(X) and then
+	      GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + 4.0 and then
+	      Object.Control_Points(I)(CRV.Y) - 4.0 <= GL.Types.Double(Y) and then
+	      GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + 4.0     then
+
+	       Found_Point := I;
+	       
+	    end if;
+	 end loop;
+	 
+	 
+	 if Found_Point /= 0 then
+	    
+	    if Object.Num_Of_Control_Points > MIN_NUMBER_OF_CONTROL_POINTS then
+	       
+	       for I in Positive range Found_Point .. Object.Num_Of_Control_Points - 1 loop
+		  Object.Control_Points(I) := Object.Control_Points(I + 1);
+	       end loop;
+	       Object.Num_Of_Control_Points := Object.Num_Of_Control_Points - 1;   
+	       
+	    end if;
+	    
+	 else
+	    
+	    if Object.Num_Of_Control_Points < MAX_NUMBER_OF_CONTROL_POINTS and then
+	      X >= 0.0 and then X <= Glfw.Input.Mouse.Coordinate(WINDOW_WIDTH) and then 
+	      Y >= 0.0 and then Y <= Glfw.Input.Mouse.Coordinate(WINDOW_HEIGHT) then
+	       
+	       Object.Num_Of_Control_Points := Object.Num_Of_Control_Points + 1;   
+	       Object.Control_Points(Object.Num_Of_Control_Points) := (GL.Types.Double(X), GL.Types.Double(Y));
+	       
+	    end if;
+	 end if;
+      
+      elsif Button = Glfw.Input.Mouse.Left_Button then
+	 
+	 if  State = Glfw.Input.Released then
 	    
 	    if Object.Selected_Point /= 0 and then 
 	      X >= 0.0 and then X <= Glfw.Input.Mouse.Coordinate(WINDOW_WIDTH) and then 
@@ -197,23 +258,20 @@ procedure Main is
 	    
 	    Object.Selected_Point := 0;
 	    
-	    for I in Object.Control_Points'Range Loop
+	    for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
 	       
-	       Object.Get_Cursor_Pos (X, Y);
-	       Object.Original_X := GL.Types.Double (X);
-	       Object.Original_Y := GL.Types.Double (Y);
-	       
-	       
-	       if Object.Control_Points(I)(CRV.X) - 4.0 <= Object.Original_X and then
-		 Object.Original_X <= Object.Control_Points(I)(CRV.X) + 4.0 and then
-		 Object.Control_Points(I)(CRV.Y) - 4.0 <= Object.Original_Y and then
-		 Object.Original_Y<= Object.Control_Points(I)(CRV.Y) + 4.0  then
+	       if Object.Control_Points(I)(CRV.X) - 4.0 <= GL.Types.Double(X) and then
+		 GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + 4.0 and then
+		 Object.Control_Points(I)(CRV.Y) - 4.0 <= GL.Types.Double(Y) and then
+		 GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + 4.0     then		  
 		 
-		  -- Last point precendency
-		  Object.Selected_Point := I;
-		  Object.Delta_X := 0.0;
-		  Object.Delta_Y := 0.0;
-		  
+		 Object.Original_X := GL.Types.Double (X);
+		 Object.Original_Y := GL.Types.Double (Y);
+	       	  
+		 Object.Selected_Point := I;
+		 Object.Delta_X := 0.0;
+		 Object.Delta_Y := 0.0;
+		 
 	       end if;
 	    end loop;
 	 end if;
@@ -284,13 +342,10 @@ procedure Main is
    
    My_Window : aliased Test_Window;
    
-   Control_Points_For_Drawing : CRV.Control_Points_Array := My_Window.Control_Points;
-   
    Info_Font : FTGL.Fonts.Polygon_Font;
    
    Font_Loaded : Boolean := False;
-   
-   
+     
    -- Separate Procedures and Functions
    ------------------------------------
    procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
@@ -339,20 +394,7 @@ begin
    while not My_Window'Access.Should_Close loop
       
       Clear (Buffer_Bits'(others => True));
-            
-      if My_Window.Selected_Point = 0 then
-	 
-	 Control_Points_For_Drawing := My_Window.Control_Points;
-	 
-      else
-	 
-	 Control_Points_For_Drawing(My_Window.Selected_Point)(CRV.X) := 
-	   My_Window.Control_Points(My_Window.Selected_Point)(CRV.X) + My_Window.Delta_X;
-	 
-	 Control_Points_For_Drawing(My_Window.Selected_Point)(CRV.Y) := 
-	   My_Window.Control_Points(My_Window.Selected_Point)(CRV.Y) + My_Window.Delta_Y;
-	
-      end if;
+      
       
       --  Output info to screen
       --
@@ -366,28 +408,52 @@ begin
 					 ( 0.0,  0.0, 1.0, 0.0),
 					 ( 0.0,  0.0, 0.0, 1.0) ));
 	 Modelview.Apply_Translation (0.0, - Double(WINDOW_HEIGHT), 0.0);
-	 	 
+	 
 	 Gl.Immediate.Set_Color (GL.Types.Colors.Color'(1.0, 1.0, 1.0, 0.0));
 	 Modelview.Apply_Translation (15.0, -Double(Info_Font.Descender), 0.0);
 	 Info_Font.Render (Algorithm_Type'Image(My_Window.Algorithm), (Front => True, others => False));
 	 
+	 Modelview.Apply_Translation (200.0, 0.0, 0.0);
+	 Info_Font.Render (Ada.Strings.Fixed.Trim(Integer'Image(My_Window.Num_Of_Control_Points), Ada.Strings.Left) &
+			     " / " &
+			     Ada.Strings.Fixed.Trim(Integer'Image(MAX_NUMBER_OF_CONTROL_POINTS), Ada.Strings.Left)  &
+			     " Points"
+			     , (Front => True, others => False));
+	 
+	 
 	 Modelview.Pop;
       end if;
       
-
-      -- Draw the control polygon and points
-      --
-      if My_Window.Display_Control_Polygon then
-	 Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
+      
+      declare
+	    Control_Points_For_Drawing : CRV.Control_Points_Array := My_Window.Control_Points(1..My_Window.Num_Of_Control_Points);	    
+      begin
 	 
-	 Draw_Control_Points(Control_Points => Control_Points_For_Drawing,
-			     Selected_Point => My_Window.Selected_Point);
-      end if;
-      
-      -- Draw the curve
-      --    
-      Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm);      
-      
+	 if My_Window.Selected_Point in Control_Points_For_Drawing'Range then
+	    
+	    Control_Points_For_Drawing(My_Window.Selected_Point)(CRV.X) := 
+	      My_Window.Control_Points(My_Window.Selected_Point)(CRV.X) + My_Window.Delta_X;
+	    
+	    Control_Points_For_Drawing(My_Window.Selected_Point)(CRV.Y) := 
+	      My_Window.Control_Points(My_Window.Selected_Point)(CRV.Y) + My_Window.Delta_Y;
+	    
+	 end if;
+	 
+	 -- Draw the control polygon and points
+	 --
+	 if My_Window.Display_Control_Polygon then
+	    Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
+	    
+	    Draw_Control_Points(Control_Points => Control_Points_For_Drawing,
+				Selected_Point => My_Window.Selected_Point,
+				Hovered_Point  => My_Window.Hovered_Point);
+	 end if;
+	 
+	 -- Draw the curve
+	 --    
+	 Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm);      
+	 
+      end;
       
       -- Draw help overlay on top of everything else
       --
