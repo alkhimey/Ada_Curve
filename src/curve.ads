@@ -83,5 +83,10 @@ package Curve is
 			       Knot           : in Positive;
 			       T              : in Parametrization_Type) return Point_Type;
    
+   -- Evaluate f(t) of a function interpolating  {t,f(t)}, where t vlaues are evenly spaced.
+   -- and f(t) values are control points. The interpolation is done with Lagrange method.
+   function Eval_Lagrange( Control_Points : in Control_Points_Array;
+			   T              : in Parametrization_Type) return Point_Type;
+      
    
 end Curve;

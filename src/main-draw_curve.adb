@@ -20,15 +20,17 @@ begin
       
       case Algorithm is 
 	 
-	 when DE_CASTELIJAU =>
-	    Knots_To_Draw := 1;	    
+	 when DE_CASTELIJAU | LAGRANGE =>
+	    Knots_To_Draw := 1; -- No knots
 	    
 	 when DE_BOOR       => 	    
 	    null;
 	    
 	 when CATMULL_ROM => 
 	    Knots_To_Draw := Control_Points'Length - 3; 
-	    	    
+	    
+	    
+	    
       end case;
 
       
@@ -50,6 +52,9 @@ begin
 		  
 	       when CATMULL_ROM  => 
 		  P := CRV.Eval_Catmull_Rom( Control_Points, Knot, T);
+		  
+	       when LAGRANGE =>
+		  P := CRV.Eval_Lagrange( Control_Points, T);
 		  
 	    end case;
 

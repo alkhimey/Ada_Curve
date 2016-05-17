@@ -124,6 +124,46 @@ package body Curve is
    end;
    
    
+   function Eval_Lagrange( Control_Points : in Control_Points_Array;
+			   T              : in Parametrization_Type) return Point_Type is   
+      
+      Result : Point_Type := ORIGIN_POINT;
+
+      function Eval_Basis_Poly(J : in Positive)  return Base_Real_Type is 
+	 
+	 D : constant  Base_Real_Type := (Parametrization_Type'Last - Parametrization_Type'First) / Base_Real_Type(Control_Points'Length - 1);
+	 
+	 Numentator   : Base_Real_Type := 1.0;
+	 Denominator  : Base_Real_Type := 1.0;
+      
+      begin
+	 
+	 for M in Control_Points'Range loop
+	    
+	    if M /= J then
+	       Numentator  := Numentator  * (T -                                                   
+					       Parametrization_Type'(Parametrization_Type'First + D * Base_Real_Type(M - 1)));
+	       Denominator := Denominator * (Parametrization_Type'(Parametrization_Type'First + D * Base_Real_Type(J - 1)) - 
+					       Parametrization_Type'(Parametrization_Type'First + D * Base_Real_Type(M - 1)));
+	    end if;
+	 
+	 end loop;
+	   
+	 return Numentator / Denominator;
+	 
+      end Eval_Basis_Poly;
+	
+   begin
+      
+      for I  in Control_Points'Range  loop
+	
+	 Result := Result + Control_Points(I) * Eval_Basis_Poly(I);
+	 
+      end loop;
+      
+      return Result;	
+         
+   end Eval_Lagrange;
    
 begin
 

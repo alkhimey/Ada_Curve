@@ -75,7 +75,7 @@ procedure Main is
    -- Types
    --------
    
-   type Algorithm_Type is (DE_CASTELIJAU, DE_BOOR, CATMULL_ROM);
+   type Algorithm_Type is (DE_CASTELIJAU, DE_BOOR, CATMULL_ROM, LAGRANGE);
    
    
    type Test_Window is new Glfw.Windows.Window with record
@@ -403,9 +403,7 @@ begin
       GL.Flush;
       Glfw.Windows.Context.Swap_Buffers (My_Window'Access);    
       Glfw.Input.Wait_For_Events;
-      
-      
-      
+     
    end loop;
 
    Glfw.Shutdown;
