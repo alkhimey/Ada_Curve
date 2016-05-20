@@ -20,7 +20,7 @@ begin
       
       case Algorithm is 
 	 
-	 when DE_CASTELIJAU | LAGRANGE =>
+	 when DE_CASTELIJAU | LAGRANGE_EQUIDISTANT | LAGRANGE_CHEBYSHEV =>
 	    Knots_To_Draw := 1; -- No knots
 	    
 	 when DE_BOOR       => 	    
@@ -53,9 +53,14 @@ begin
 	       when CATMULL_ROM  => 
 		  P := CRV.Eval_Catmull_Rom( Control_Points, Knot, T);
 		  
-	       when LAGRANGE =>
-		  P := CRV.Eval_Lagrange( Control_Points, T);
+	       when LAGRANGE_EQUIDISTANT =>
 		  
+		  P := CRV.Eval_Lagrange( Control_Points, CRV.Make_Equidistant_Nodes(Control_Points'Length), T);
+		  
+	       when LAGRANGE_CHEBYSHEV =>
+		     
+		  P := CRV.Eval_Lagrange( Control_Points, CRV.Make_Chebyshev_Nodes(Control_Points'Length), T);
+		     
 	    end case;
 
 	    GL.Immediate.Add_Vertex(Token, Vector2'(P(CRV.X), P(CRV.Y)));

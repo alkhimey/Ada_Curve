@@ -22,6 +22,7 @@
 -- 
 --
 
+with Ada.Numerics;
 
 package body Curve is 
    
@@ -56,8 +57,6 @@ package body Curve is
       return Result;
    end;
 
-   
-   
    function "*" (Left  : in Point_Type; 
 		 Right : in Base_Real_Type ) return Point_Type is
       Result : Point_Type;
@@ -124,9 +123,10 @@ package body Curve is
    end;
    
    
-   function Eval_Lagrange( Control_Points : in Control_Points_Array;
-			   T              : in Parametrization_Type) return Point_Type is   
-      
+   function Eval_Lagrange( Control_Points      : in Control_Points_Array;
+			   Interpolation_Nodes : in Interpolation_Nodes_Array;
+			   T                   : in Parametrization_Type) return Point_Type is
+   
       Result : Point_Type := ORIGIN_POINT;
 
       function Eval_Basis_Poly(J : in Positive)  return Base_Real_Type is 
@@ -141,10 +141,9 @@ package body Curve is
 	 for M in Control_Points'Range loop
 	    
 	    if M /= J then
-	       Numentator  := Numentator  * (T -                                                   
-					       Parametrization_Type'(Parametrization_Type'First + D * Base_Real_Type(M - 1)));
-	       Denominator := Denominator * (Parametrization_Type'(Parametrization_Type'First + D * Base_Real_Type(J - 1)) - 
-					       Parametrization_Type'(Parametrization_Type'First + D * Base_Real_Type(M - 1)));
+	       Numentator  := Numentator  * (  T                     - Interpolation_Nodes(M) );
+	       
+	       Denominator := Denominator * ( Interpolation_Nodes(J) - Interpolation_Nodes(M) );
 	    end if;
 	 
 	 end loop;
@@ -164,6 +163,51 @@ package body Curve is
       return Result;	
          
    end Eval_Lagrange;
+   
+   
+   function Make_Equidistant_Nodes( N : Positive ) return Interpolation_Nodes_Array is 
+      
+      D : constant  Base_Real_Type := (Parametrization_Type'Last - Parametrization_Type'First) / Base_Real_Type(N - 1);
+      Res : Interpolation_Nodes_Array(1..N);
+      
+   begin
+      
+      Res(Res'First) := Parametrization_Type'First;
+      
+      if N /= 1 then
+	 
+	 for I in Res'First + 1 .. Res'Last - 1 loop
+	    
+	    Res(I) := Parametrization_Type'First + D * Base_Real_Type(I-1);
+	    
+	 end loop;
+	 
+	 Res(Res'Last) := Parametrization_Type'Last;
+	 
+      end if;
+      
+      return Res;
+      
+   end;
+   
+   
+   function Make_Chebyshev_Nodes( N : Positive )   return Interpolation_Nodes_Array is 
+      Res : Interpolation_Nodes_Array(1..N);
+   begin
+      Res := (others => 0.0);
+      
+      	 for K in Res'Range loop
+	    
+ 	    Res(K) := 0.5 * (Parametrization_Type'First + Parametrization_Type'Last) + 
+
+	      0.5 * (Parametrization_Type'Last - Parametrization_Type'First) * 
+	      Base_Type_Math.Cos( Ada.Numerics.PI *  Base_Real_Type(2*K - 1)  / Base_Real_Type(2*N) );
+    
+	 end loop;
+	 
+      return Res;
+   end;
+
    
 begin
 

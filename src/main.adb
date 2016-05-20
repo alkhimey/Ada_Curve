@@ -79,7 +79,7 @@ procedure Main is
    -- Types
    --------
    
-   type Algorithm_Type is (DE_CASTELIJAU, DE_BOOR, CATMULL_ROM, LAGRANGE);
+   type Algorithm_Type is (DE_CASTELIJAU, DE_BOOR, CATMULL_ROM, LAGRANGE_EQUIDISTANT, LAGRANGE_CHEBYSHEV);
    
    
    type Test_Window is new Glfw.Windows.Window with record
@@ -413,7 +413,7 @@ begin
 	 Modelview.Apply_Translation (15.0, -Double(Info_Font.Descender), 0.0);
 	 Info_Font.Render (Algorithm_Type'Image(My_Window.Algorithm), (Front => True, others => False));
 	 
-	 Modelview.Apply_Translation (200.0, 0.0, 0.0);
+	 Modelview.Apply_Translation (250.0, 0.0, 0.0);
 	 Info_Font.Render (Ada.Strings.Fixed.Trim(Integer'Image(My_Window.Num_Of_Control_Points), Ada.Strings.Left) &
 			     " / " &
 			     Ada.Strings.Fixed.Trim(Integer'Image(MAX_NUMBER_OF_CONTROL_POINTS), Ada.Strings.Left)  &

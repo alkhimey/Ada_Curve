@@ -22,11 +22,14 @@
 -- 
 --
 
+with Ada.Numerics.Generic_Elementary_Functions;
+
 generic
    type Base_Real_Type is digits <>; -- Floating point only (can be manually changed to fixed point)
    Dimension          : Positive;
 package Curve is
    
+   package Base_Type_Math is new Ada.Numerics.Generic_Elementary_Functions(Base_Real_Type);
    
    -- Type Definitions
    -------------------
@@ -38,6 +41,8 @@ package Curve is
    subtype Parametrization_Type is Base_Real_Type range 0.0 .. 1.0;
    
    type Control_Points_Array is array(Positive range <>) of Point_Type;
+   
+   type Interpolation_Nodes_Array is array(Positive range <>) of Parametrization_Type;
    
    type Knot_Values_Array is array(Positive range <>) of Positive;
    
@@ -83,10 +88,15 @@ package Curve is
 			       Knot           : in Positive;
 			       T              : in Parametrization_Type) return Point_Type;
    
-   -- Evaluate f(t) of a function interpolating  {t,f(t)}, where t vlaues are evenly spaced.
+   -- Evaluate f(t) of a function interpolating  {t,f(t)}, where t vlaues are the interpolation nodes.
    -- and f(t) values are control points. The interpolation is done with Lagrange method.
-   function Eval_Lagrange( Control_Points : in Control_Points_Array;
-			   T              : in Parametrization_Type) return Point_Type;
-      
+   function Eval_Lagrange( Control_Points      : in Control_Points_Array;
+			   Interpolation_Nodes : in Interpolation_Nodes_Array;
+			   T                   : in Parametrization_Type) return Point_Type;
+   
+   function Make_Equidistant_Nodes(  N : Positive ) return Interpolation_Nodes_Array;
+   
+   function Make_Chebyshev_Nodes(  N : Positive )   return Interpolation_Nodes_Array;
+   
    
 end Curve;
