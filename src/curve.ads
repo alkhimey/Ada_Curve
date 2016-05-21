@@ -92,7 +92,8 @@ package Curve is
    -- and f(t) values are control points. The interpolation is done with Lagrange method.
    function Eval_Lagrange( Control_Points      : in Control_Points_Array;
 			   Interpolation_Nodes : in Interpolation_Nodes_Array;
-			   T                   : in Parametrization_Type) return Point_Type;
+			   T                   : in Parametrization_Type) return Point_Type with
+     Pre => Control_Points'Length = Interpolation_Nodes'Length;
    
    function Make_Equidistant_Nodes(  N : Positive ) return Interpolation_Nodes_Array;
    
