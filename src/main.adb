@@ -363,6 +363,7 @@ begin
    
    Glfw.Init;
    Glfw.Windows.Hints.Set_Resizable(False);
+   Glfw.Windows.Hints.Set_Samples(16); -- Anti-aliasing
    My_Window'Access.Init (WINDOW_WIDTH, WINDOW_HEIGHT, Base_Title);
    Glfw.Windows.Context.Make_Current (My_Window'Access);
 
