@@ -1,6 +1,6 @@
 --  The MIT License (MIT)
 --
---  Copyright (c) 2015 artium@nihamkin.com
+--  Copyright (c) 2015-2017 artium@nihamkin.com
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -91,27 +91,89 @@ package body Curve is
       return Temp_Points(Temp_Points'First);
       
    end; 
-   
-   
+
+
+   -- De Boor algorithm taken from here:
+   --     http://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/B-spline/de-Boor.html
+   --
+   --  If u lies in [uk,uk+1) and u != uk, let h = p (i.e., inserting u p times) and s = 0; 
+   --  If u = uk and uk is a knot of multiplicity s, let h = p - s (i.e., inserting u p - s times); 
+   --  Copy the affected control points Pk-s, Pk-s-1, Pk-s-2, ..., Pk-p+1 and Pk-p to a new array and rename them as Pk-s,0, Pk-s-1,0, Pk-s-2,0, ..., Pk-p+1,0; 
+   --  
+   --  for r := 1 to h do 
+   --     for i := k-p+r to k-s do  
+   --        Let ai,r = (u - ui) / ( ui+p-r+1 - ui ) 
+   --        Let Pi,r = (1 - ai,r) Pi-1,r-1 + ai,r Pi,r-1 
+   --  Pk-s,p-s is the point C(u).
+   --
    function Eval_De_Boor      ( Control_Points : in Control_Points_Array;
 				Knot_Values    : in Knot_Values_Array;
 				T              : in Parametrization_Type) return Point_Type is
+      
+      subtype Knot_Index_Type is Positive range Knot_Values'Range;
+
+      Degree : constant Positive := Knot_Values'Length - Control_Points'Length;
+
+      -- Basis functions N(i,k)
+      --
+      type P_Type is array
+         ( Positive range Knot_Index_Type'First .. Knot_Index_Type'Last - 1, 
+           Positive range 1                     .. Degree) of Point_Type;
+      
+      H : Natural := Degree;
+      S : Natural := 0;
+      K : Knot_Index_Type;
+      P : P_Type := (others => (others => Point_Type'(others => 0.0) ) );
+      
+      function Alpha( I,R : in Knot_Index_Type) return Parametrization_Type is
+      begin
+         return (T - Knot_Values(I)) / (Knot_Values(I + Degree - R) - Knot_Values(I));
+      end Alpha;
+      
    begin
-      return ORIGIN_POINT;
+   
+      --  Determine knot segment and required multiplicty
+      -- TODO: What about T = 1.0??
+      for I in Knot_Values'First .. Knot_Values'Last - 1 loop
+         if Knot_Values( I ) = T then
+            H := H - 1;
+            S := S + 1;
+            K := I;
+         elsif Knot_Values( I ) > T and then T > Knot_Values( I+1 ) then
+            K := I;
+         end if;        
+      end loop;
+      
+      for I in Knot_Index_Type range K - S .. K - Degree loop
+         P(I, 1) := Control_Points( I );
+      end loop;
+      
+      for R in Knot_Index_Type range 1 .. H loop
+         for I in Knot_Index_Type range K - Degree + R .. K - S loop
+            declare
+               A : Parametrization_Type := Alpha(I, R);
+            begin
+               P(I, R) := (1.0-A) * P(I-1, R-1) + A * P(I,R-1); 
+            end;
+         end loop;
+      end loop;
+      
+      return P(K-S, Degree-S);
    end;
+
    
    function Eval_Catmull_Rom ( Control_Points : in Control_Points_Array;
-			       Knot           : in Positive;
+			       Segment        : in Positive;
 			       T              : in Parametrization_Type) return Point_Type is 
       
       P0, P1, P2, P3 : Point_Type;
       
    begin
       
-      P0 := Control_Points( Knot );
-      P1 := Control_Points( Knot + 1 );
-      P2 := Control_Points( Knot + 2 );
-      P3 := Control_Points( Knot + 3 );
+      P0 := Control_Points( Segment );
+      P1 := Control_Points( Segment + 1 );
+      P2 := Control_Points( Segment + 2 );
+      P3 := Control_Points( Segment + 3 );
 
 	
       return 0.5 * (
@@ -129,7 +191,9 @@ package body Curve is
    
       Result : Point_Type := ORIGIN_POINT;
 
-      function Eval_Basis_Poly(J : in Positive)  return Base_Real_Type is 
+      subtype Interpolation_Nodes_Index_Type is Positive range Interpolation_Nodes'Range;
+
+      function Eval_Basis_Poly(J : in Interpolation_Nodes_Index_Type)  return Base_Real_Type is 
 	 
 	 D : constant  Base_Real_Type := (Parametrization_Type'Last - Parametrization_Type'First) / Base_Real_Type(Control_Points'Length - 1);
 	 

@@ -1,6 +1,6 @@
 --  The MIT License (MIT)
 --
---  Copyright (c) 2016 artium@nihamkin.com
+--  Copyright (c) 2016-2017 artium@nihamkin.com
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,7 @@ package Curve is
    
    type Interpolation_Nodes_Array is array(Positive range <>) of Parametrization_Type;
    
-   type Knot_Values_Array is array(Positive range <>) of Positive;
+   type Knot_Values_Array is array(Positive range <>) of Parametrization_Type;
    
    -- Constants
    ------------
@@ -85,7 +85,7 @@ package Curve is
 				T              : in Parametrization_Type) return Point_Type;
    
    function Eval_Catmull_Rom ( Control_Points : in Control_Points_Array;
-			       Knot           : in Positive;
+			       Segment        : in Positive;
 			       T              : in Parametrization_Type) return Point_Type;
    
    -- Evaluate f(t) of a function interpolating  {t,f(t)}, where t vlaues are the interpolation nodes.
