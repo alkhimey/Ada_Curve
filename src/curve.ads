@@ -80,9 +80,10 @@ package Curve is
 				T              : in Parametrization_Type) return Point_Type;
    
    
-   function Eval_De_Boor      ( Control_Points : in Control_Points_Array;
-				Knot_Values    : in Knot_Values_Array;
-				T              : in Parametrization_Type) return Point_Type;
+   function Eval_De_Boor      ( Control_Points        : in Control_Points_Array;
+				Knot_Values           : in Knot_Values_Array;
+				T                     : in Parametrization_Type;
+				Is_Outside_The_Domain : out Boolean) return Point_Type;
    
    function Eval_Catmull_Rom ( Control_Points : in Control_Points_Array;
 			       Segment        : in Positive;

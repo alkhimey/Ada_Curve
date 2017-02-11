@@ -35,21 +35,26 @@ procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
 
       T : Gl.Types.Double := 0.0;
       P : CRV.Point_Type := CRV.ORIGIN_POINT;
-   
+      Skip_Vertex : Boolean := False;
    begin
    
       T  := 0.0;
 	 
       while T <= 1.0  loop
-	    
+	 
+	 Skip_Vertex := False;
+	  
          case Algorithm is 
 
             when DE_CASTELIJAU => 
                P := CRV.Eval_De_Castelijau( Control_Points, T);	    
 		  
             when DE_BOOR       => 
-               --P := CRV.Eval_De_Boor( Control_Points, (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9), T);
-               null;
+               P := CRV.Eval_De_Boor
+                  ( Control_Points        => Control_Points, 
+                    Knot_Values           => (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9), 
+                    T                     => T,
+                    Is_Outside_The_Domain => Skip_Vertex);
                
             when CATMULL_ROM  => 
                P := CRV.Eval_Catmull_Rom( Control_Points, Segment, T);
@@ -62,7 +67,10 @@ procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
 		     
          end case;
          
-         GL.Immediate.Add_Vertex(Token, Vector2'(P(CRV.X), P(CRV.Y)));
+         if not Skip_Vertex then
+             GL.Immediate.Add_Vertex(Token, Vector2'(P(CRV.X), P(CRV.Y)));
+         end if;
+         
          T := T + STEP;
 
       end loop;	

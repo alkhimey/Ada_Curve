@@ -106,48 +106,67 @@ package body Curve is
    --        Let Pi,r = (1 - ai,r) Pi-1,r-1 + ai,r Pi,r-1 
    --  Pk-s,p-s is the point C(u).
    --
-   function Eval_De_Boor      ( Control_Points : in Control_Points_Array;
-				Knot_Values    : in Knot_Values_Array;
-				T              : in Parametrization_Type) return Point_Type is
+   function Eval_De_Boor      ( Control_Points        : in Control_Points_Array;
+				Knot_Values           : in Knot_Values_Array;
+				T                     : in Parametrization_Type;
+				Is_Outside_The_Domain : out Boolean) return Point_Type is
       
       subtype Knot_Index_Type is Positive range Knot_Values'Range;
 
-      Degree : constant Positive := Knot_Values'Length - Control_Points'Length;
+      Degree : constant Natural := Knot_Values'Length - Control_Points'Length - 1;
 
-      -- Basis functions N(i,k)
+      function Alpha( I,R : in Knot_Index_Type) return Parametrization_Type is
+      begin
+         return (T - Knot_Values(I)) / (Knot_Values(I + Degree - R + 1) - Knot_Values(I));
+      end Alpha;
+
+      -- Intermidiate values 
       --
       type P_Type is array
-         ( Positive range Knot_Index_Type'First .. Knot_Index_Type'Last - 1, 
-           Positive range 1                     .. Degree) of Point_Type;
+         ( Knot_Index_Type, 
+           Natural range 0 .. Degree) of Point_Type;
+      
       
       H : Natural := Degree;
       S : Natural := 0;
       K : Knot_Index_Type;
       P : P_Type := (others => (others => Point_Type'(others => 0.0) ) );
       
-      function Alpha( I,R : in Knot_Index_Type) return Parametrization_Type is
-      begin
-         return (T - Knot_Values(I)) / (Knot_Values(I + Degree - R) - Knot_Values(I));
-      end Alpha;
+      
       
    begin
    
+      Is_Outside_The_Domain := False;
+   
       --  Determine knot segment and required multiplicty
-      -- TODO: What about T = 1.0??
-      for I in Knot_Values'First .. Knot_Values'Last - 1 loop
+      --
+      for I in Knot_Values'First .. Knot_Values'Last loop
+         -- TODO: Deal with degree 0!
          if Knot_Values( I ) = T then
             H := H - 1;
             S := S + 1;
             K := I;
-         elsif Knot_Values( I ) > T and then T > Knot_Values( I+1 ) then
+         elsif I < Knot_Values'Last and then Knot_Values( I + 1 ) > T and then T > Knot_Values( I ) then
             K := I;
          end if;        
       end loop;
       
-      for I in Knot_Index_Type range K - S .. K - Degree loop
-         P(I, 1) := Control_Points( I );
+      if T < Knot_Values( Knot_Values'First + Degree) or else 
+         T > Knot_Values( Knot_Values'Last  - Degree) then
+      
+          Is_Outside_The_Domain := True;
+          return ORIGIN_POINT;
+         
+      end if;
+      
+      -- Prepare the points
+      --
+      for I in Knot_Index_Type range K - Degree .. K - S loop
+         P(I, 0) := Control_Points( I + Knot_Values'First - Control_Points'First ); 
       end loop;
       
+      -- Preform knot insertion H times
+      --
       for R in Knot_Index_Type range 1 .. H loop
          for I in Knot_Index_Type range K - Degree + R .. K - S loop
             declare
@@ -158,6 +177,8 @@ package body Curve is
          end loop;
       end loop;
       
+      -- Return the result
+      --
       return P(K-S, Degree-S);
    end;
 
