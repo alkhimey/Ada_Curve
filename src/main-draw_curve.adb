@@ -23,10 +23,10 @@
 --
 
 separate (Main)
-procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
-		     Algorithm      : Algorithm_Type  ) is
-   
-   
+procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
+                     Algorithm      : in Algorithm_Type;
+                     Knot_Values    : in CRV.Knot_Values_Array) is
+
    procedure Draw_Curve_Segment(Segment : in Positive := 1) is
       
       STEP : constant := 0.015625; -- Power of 2 required for floating point to reach 1.0 exaclty!
@@ -42,7 +42,7 @@ procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
 	 
       while T <= 1.0  loop
 	 
-	 Skip_Vertex := False;
+         Skip_Vertex := False;
 	  
          case Algorithm is 
 
@@ -52,7 +52,7 @@ procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
             when DE_BOOR       => 
                P := CRV.Eval_De_Boor
                   ( Control_Points        => Control_Points, 
-                    Knot_Values           => (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9), 
+                    Knot_Values           => Knot_Values, 
                     T                     => T,
                     Is_Outside_The_Domain => Skip_Vertex);
                

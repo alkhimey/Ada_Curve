@@ -106,6 +106,8 @@ procedure Main is
       Help_Overlay_Required : Boolean := False;
       
       Display_Control_Polygon : Boolean := True;
+      
+      Knot_Values : CRV.Knot_Values_Array (1 .. 10) := (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
    end record;
    
    -- Overrides
@@ -335,7 +337,6 @@ procedure Main is
    -- Constants
    ------------
    BASE_TITLE : constant String := "Curve Test ";
-   
  
    -- Variables
    ------------
@@ -348,14 +349,17 @@ procedure Main is
      
    -- Separate Procedures and Functions
    ------------------------------------
-   procedure Draw_Curve(Control_Points : CRV.Control_Points_Array;
-			Algorithm      : Algorithm_Type  ) is separate;
-   
+   procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
+                        Algorithm      : in Algorithm_Type;
+                        Knot_Values    : in CRV.Knot_Values_Array) is separate;
+
    procedure Draw_Control_Polygon(Control_Points : CRV.Control_Points_Array) is separate;
-   
+
+   procedure Draw_Knots_Control(Knot_Values : in CRV.Knot_Values_Array) is separate;
+
    procedure Draw_Control_Points(Control_Points : CRV.Control_Points_Array;
-				 Hovered_Point  : Natural := 0;
-				 Selected_Point : Natural := 0) is separate;
+                                 Hovered_Point  : Natural := 0;
+                                 Selected_Point : Natural := 0) is separate;
    
    procedure Draw_Help_Overlay is separate;
 
@@ -376,15 +380,15 @@ begin
       Put_Line ("A path to a font file was not provided as an argument.");
    else
       declare
-	 Font_Path : constant String := Ada.Command_Line.Argument (1);
+         Font_Path : constant String := Ada.Command_Line.Argument (1);
       begin
-	 Info_Font.Load (Font_Path);
-	 Info_Font.Set_Font_Face_Size (18);
+         Info_Font.Load (Font_Path);
+         Info_Font.Set_Font_Face_Size (18);
 	 
-	 Font_Loaded := True;
+         Font_Loaded := True;
       exception
-	 when FTGL.FTGL_Error =>
-	    Ada.Text_IO.Put_Line ("Could not load font file " & Font_Path);
+         when FTGL.FTGL_Error =>
+            Ada.Text_IO.Put_Line ("Could not load font file " & Font_Path);
       end;
    end if;
    
@@ -450,9 +454,14 @@ begin
 				Hovered_Point  => My_Window.Hovered_Point);
 	 end if;
 	 
-	 -- Draw the curve
+   -- Draw the visualisation of the knot vector
+   --
+   Draw_Knots_Control(My_Window.Knot_Values);
+	 
+	 -- Draw the curve. Use common knot values which might be relevant only
+	 -- to portion of algorithms.
 	 --    
-	 Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm);      
+	 Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm, My_Window.Knot_Values);
 	 
       end;
       
