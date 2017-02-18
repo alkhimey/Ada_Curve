@@ -8,7 +8,7 @@ Fun and experimentation with curve drawing algorithms using Ada.
 ## Currently Implemented
 
 * De Castelijau
-* De Boor (not implemented yet)
+* De Boor
 * Catmull Rom
 * Lagrange interplation on equidistant nodes
 * LAgrange interpolation on Chavyshev nodes
@@ -19,11 +19,15 @@ One needs to install cmake to build glfw3 and gprbuild to build OpenGLAda.
 
 ## Build
 
+The command ```make``` will execute:
+
 ```bash
 gprbuild  -p -P adacurve.gpr -XWindowing_System=x11 -XGLFW_Version=3
 ```
 
 ## Run
+
+The command ```make run``` will execute:
 
 ```bash
 ./bin/main ./OpenGLAda/tests/ftgl/SourceCodePro-Regular.ttf
