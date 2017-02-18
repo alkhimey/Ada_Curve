@@ -33,8 +33,8 @@ begin
    
    for I in Control_Points'Range loop
       GL.Immediate.Add_Vertex(Token, Vector2'
-				(Control_Points(I)(CRV.X), 
-				 Control_Points(I)(CRV.Y)));
-   end loop;	 
+                                (Control_Points(I)(CRV.X), 
+                                 Control_Points(I)(CRV.Y)));
+   end loop;         
    
 end Draw_Control_Polygon;

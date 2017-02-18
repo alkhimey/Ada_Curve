@@ -39,16 +39,16 @@ procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
    begin
    
       T  := 0.0;
-	 
+         
       while T <= 1.0  loop
-	 
+         
          Skip_Vertex := False;
-	  
+          
          case Algorithm is 
 
             when DE_CASTELIJAU => 
-               P := CRV.Eval_De_Castelijau( Control_Points, T);	    
-		  
+               P := CRV.Eval_De_Castelijau( Control_Points, T);            
+                  
             when DE_BOOR       => 
                P := CRV.Eval_De_Boor
                   ( Control_Points        => Control_Points, 
@@ -58,13 +58,13 @@ procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
                
             when CATMULL_ROM  => 
                P := CRV.Eval_Catmull_Rom( Control_Points, Segment, T);
-		  
+                  
             when LAGRANGE_EQUIDISTANT =>
                P := CRV.Eval_Lagrange( Control_Points, CRV.Make_Equidistant_Nodes(Control_Points'Length), T);
-		  
+                  
             when LAGRANGE_CHEBYSHEV =>
                P := CRV.Eval_Lagrange( Control_Points, CRV.Make_Chebyshev_Nodes(Control_Points'Length), T);
-		     
+                     
          end case;
          
          if not Skip_Vertex then
@@ -73,7 +73,7 @@ procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
          
          T := T + STEP;
 
-      end loop;	
+      end loop;        
    
    end Draw_Curve_Segment;
    
@@ -86,7 +86,7 @@ begin
    case Algorithm is
       when DE_CASTELIJAU | LAGRANGE_EQUIDISTANT | LAGRANGE_CHEBYSHEV | DE_BOOR =>
          Draw_Curve_Segment;
-	   
+           
       when CATMULL_ROM => 
          for Segment in Positive range 1 .. Control_Points'Length - 3 loop
             Draw_Curve_Segment(Segment); 

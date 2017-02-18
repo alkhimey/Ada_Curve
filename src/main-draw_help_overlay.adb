@@ -37,14 +37,14 @@ begin
       GL.Blending.Set_Blend_Func(GL.Blending.Src_Alpha, GL.Blending.One_Minus_Src_Alpha);
       
       declare
-	 Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Quads);
+         Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Quads);
       begin   
-	 Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.1, 0.1, 0.1, 0.9));
-	 
-	 GL.Immediate.Add_Vertex(Token, Vector2'(0.0,                  0.0                  ));
-	 GL.Immediate.Add_Vertex(Token, Vector2'(0.0,                  Double(WINDOW_HEIGHT)));
-	 GL.Immediate.Add_Vertex(Token, Vector2'(Double(WINDOW_WIDTH), Double(WINDOW_HEIGHT)));
-	 GL.Immediate.Add_Vertex(Token, Vector2'(Double(WINDOW_WIDTH), 0.0                  ));
+         Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.1, 0.1, 0.1, 0.9));
+         
+         GL.Immediate.Add_Vertex(Token, Vector2'(0.0,                  0.0                  ));
+         GL.Immediate.Add_Vertex(Token, Vector2'(0.0,                  Double(WINDOW_HEIGHT)));
+         GL.Immediate.Add_Vertex(Token, Vector2'(Double(WINDOW_WIDTH), Double(WINDOW_HEIGHT)));
+         GL.Immediate.Add_Vertex(Token, Vector2'(Double(WINDOW_WIDTH), 0.0                  ));
       end;
       
       GL.Toggles.Disable(GL.Toggles.Blend);
@@ -55,9 +55,9 @@ begin
       
       -- Set origin at bottom left 
       Modelview.Apply_Multiplication((( 1.0,  0.0, 0.0, 0.0),
-				      ( 0.0, -1.0, 0.0, 0.0),
-				      ( 0.0,  0.0, 1.0, 0.0),
-				      ( 0.0,  0.0, 0.0, 1.0) ));
+                                      ( 0.0, -1.0, 0.0, 0.0),
+                                      ( 0.0,  0.0, 1.0, 0.0),
+                                      ( 0.0,  0.0, 0.0, 1.0) ));
       
       Modelview.Apply_Translation (15.0, -Double(Info_Font.Line_Height), 0.0);
       
