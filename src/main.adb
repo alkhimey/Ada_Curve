@@ -69,7 +69,7 @@ procedure Main is
    -- Constants
    ------------
    
-   D : constant := 4.0;
+   D : constant := 4.0; -- Diameter of a drawn point
    WINDOW_WIDTH : constant := 800;
    WINDOW_HEIGHT : constant := 600;
    
