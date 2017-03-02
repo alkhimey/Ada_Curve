@@ -69,7 +69,7 @@ procedure Main is
    -- Constants
    ------------
    
-   D : constant := 4.0; -- Diameter of a drawn point
+   D : constant Gl.Types.Double := 4.0; -- Diameter of a drawn point
    WINDOW_WIDTH : constant := 800;
    WINDOW_HEIGHT : constant := 600;
    
@@ -349,6 +349,9 @@ procedure Main is
      
    -- Separate Procedures and Functions
    ------------------------------------
+   
+   function Calculate_Knot_H_Pos(Knot_Value : in CRV.Parametrization_Type) return GL.Types.Double is separate;
+   
    procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
                         Algorithm      : in Algorithm_Type;
                         Knot_Values    : in CRV.Knot_Values_Array) is separate;
