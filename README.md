@@ -11,7 +11,7 @@ Fun and experimentation with curve drawing algorithms using Ada.
 * De Boor
 * Catmull Rom
 * Lagrange interplation on equidistant nodes
-* LAgrange interpolation on Chavyshev nodes
+* Lagrange interpolation on Chavyshev nodes
 
 ## Dependencies
 
