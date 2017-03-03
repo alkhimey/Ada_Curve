@@ -27,7 +27,7 @@ with GL.Types;
 separate (Main)
 procedure Draw_Knots_Control(Knot_Values    : in CRV.Knot_Values_Array;
                              Hovered_Knot   : Natural := 0;
-                             Selected_Knot  : Natural := 0)is
+                             Selected_Knot  : Natural := 0) is
    
 
    

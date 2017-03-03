@@ -360,6 +360,8 @@ procedure Main is
                                  Selected_Point : Natural := 0) is separate;
    
    procedure Draw_Help_Overlay is separate;
+   
+   procedure Determine_Hovered_Object is separate;
 
 begin
    
@@ -402,45 +404,7 @@ begin
       -- This code snippet will not run every frame, however is guaranteed to run when mouse
       -- position changes.
       --
-      declare
-         X, Y   : Glfw.Input.Mouse.Coordinate;
-      begin
-      
-         My_Window.Hovered_Point := 0;
-         My_Window.Hovered_Knot  := 0;      
-         
-         Get_Cursor_Pos(My_Window'Access, X, Y);
-         
-         for I in Positive range 1 .. My_Window.Num_Of_Control_Points loop
-            
-            if My_Window.Control_Points(I)(CRV.X) - D <= GL.Types.Double(X) and then
-               GL.Types.Double(X) <= My_Window.Control_Points(I)(CRV.X) + D and then
-               My_Window.Control_Points(I)(CRV.Y) - D <= GL.Types.Double(Y) and then
-               GL.Types.Double(Y) <= My_Window.Control_Points(I)(CRV.Y) + D     then
-               
-                  My_Window.Hovered_Point := I;
-               
-            end if;
-         end loop;
-         
-         -- Control points get precedence over knots
-         --
-         
-         if My_Window.Hovered_Point = 0 then
-       
-            for I in Positive range 1 .. My_Window.Num_Of_Knots loop
-            
-               if Calculate_Knot_H_Pos(My_Window.Knot_Values(I)) - D <= GL.Types.Double(X) and then
-                  GL.Types.Double(X) <= Calculate_Knot_H_Pos(My_Window.Knot_Values(I)) + D and then
-                  KNOTS_RULER_V_POS <= GL.Types.Double(Y) and then
-                  GL.Types.Double(Y) <= KNOTS_RULER_V_POS + D     then
-               
-                     My_Window.Hovered_Knot := I;
-               
-               end if;   
-            end loop;
-         end if;
-      end;
+      Determine_Hovered_Object;
       
       --  Output info to screen
       --
