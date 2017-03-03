@@ -25,9 +25,11 @@
 with GL.Types;
 
 separate (Main)
-procedure Draw_Knots_Control(Knot_Values    : in CRV.Knot_Values_Array)is
+procedure Draw_Knots_Control(Knot_Values    : in CRV.Knot_Values_Array;
+                             Hovered_Knot   : Natural := 0;
+                             Selected_Knot  : Natural := 0)is
    
-   RULER_V_POS      : constant Gl.Types.Double := GL.Types.Double(WINDOW_HEIGHT) - 50.0;
+
    
 begin
    -- Draw the ruler
@@ -37,8 +39,8 @@ begin
    begin
       Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
       
-      GL.Immediate.Add_Vertex(Token, Vector2'(Calculate_Knot_H_Pos(0.0), RULER_V_POS));
-      GL.Immediate.Add_Vertex(Token, Vector2'(Calculate_Knot_H_Pos(1.0), RULER_V_POS));
+      GL.Immediate.Add_Vertex(Token, Vector2'(Calculate_Knot_H_Pos(0.0), KNOTS_RULER_V_POS));
+      GL.Immediate.Add_Vertex(Token, Vector2'(Calculate_Knot_H_Pos(1.0), KNOTS_RULER_V_POS));
    end;
       
    -- Draw the knots
@@ -50,23 +52,30 @@ begin
          
          Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Polygon);         
       begin
-         Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.6, 0.6, 0.6, 0.0));
+      
+         if I = Selected_Knot then
+            Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
+         elsif I = Hovered_Knot then    
+            Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.0, 0.5, 0.0, 0.0));
+         else
+            Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.6, 0.6, 0.6, 0.0));
+         end if;
          
          GL.Immediate.Add_Vertex(Token, Vector2'
-                                   (KNOT_H_POS  + D, 
-                                    RULER_V_POS + D));
+                                   (KNOT_H_POS        + D, 
+                                    KNOTS_RULER_V_POS + D));
          
          GL.Immediate.Add_Vertex(Token, Vector2'
-                                   (KNOT_H_POS  - D, 
-                                    RULER_V_POS + D));
+                                   (KNOT_H_POS        - D, 
+                                    KNOTS_RULER_V_POS + D));
          
          GL.Immediate.Add_Vertex(Token, Vector2'
-                                   (KNOT_H_POS  - D, 
-                                    RULER_V_POS - D));
+                                   (KNOT_H_POS        - D, 
+                                    KNOTS_RULER_V_POS - D));
          
          GL.Immediate.Add_Vertex(Token, Vector2'
-                                   (KNOT_H_POS  + D, 
-                                    RULER_V_POS - D));
+                                   (KNOT_H_POS        + D, 
+                                    KNOTS_RULER_V_POS - D));
      
       end;
    end loop;

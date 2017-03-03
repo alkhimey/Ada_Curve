@@ -76,6 +76,9 @@ procedure Main is
    MAX_NUMBER_OF_CONTROL_POINTS : constant Positive := 99;
    MIN_NUMBER_OF_CONTROL_POINTS : constant Positive := 4; -- For Catmull-Rom
    
+   
+   KNOTS_RULER_V_POS      : constant Gl.Types.Double := GL.Types.Double(WINDOW_HEIGHT) - 50.0;
+   
    -- Types
    --------
    
@@ -108,6 +111,10 @@ procedure Main is
       Display_Control_Polygon : Boolean := True;
       
       Knot_Values : CRV.Knot_Values_Array (1 .. 10) := (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
+      Num_Of_Knots : Positive range 1 ..  103 := 10; -- TODO
+      
+      Selected_Knot, Hovered_Knot : Natural := 0;
+      
    end record;
    
    -- Overrides
@@ -162,25 +169,11 @@ procedure Main is
  
       if Object.Mouse_Button_State (0) = Glfw.Input.Pressed  and then Object.Selected_Point /= 0 then
          
-     Object.Delta_X := GL.Types.Double (X) - Object.Original_X;
+         Object.Delta_X := GL.Types.Double (X) - Object.Original_X;
          Object.Delta_Y := GL.Types.Double (Y) - Object.Original_Y;
          
       end if;
       
-      --  Object.Hovered_Point := 0;
-      
-      --  for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
-         
-      --           -- TODO: Refactor point under mouse selection into  a method
-      --           if Object.Control_Points(I)(CRV.X) - 4.0 <= GL.Types.Double(X) and then
-      --             GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + 4.0 and then
-      --             Object.Control_Points(I)(CRV.Y) - 4.0 <= GL.Types.Double(Y) and then
-      --             GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + 4.0     then
-            
-      --              Object.Hovered_Point := I;
-            
-      --           end if;
-      --  end loop;
    end Mouse_Position_Changed;
    
    
@@ -204,10 +197,10 @@ procedure Main is
          
          for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
             
-            if Object.Control_Points(I)(CRV.X) - 4.0 <= GL.Types.Double(X) and then
-              GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + 4.0 and then
-              Object.Control_Points(I)(CRV.Y) - 4.0 <= GL.Types.Double(Y) and then
-              GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + 4.0     then
+            if Object.Control_Points(I)(CRV.X) - D <= GL.Types.Double(X) and then
+              GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + D and then
+              Object.Control_Points(I)(CRV.Y) - D <= GL.Types.Double(Y) and then
+              GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + D     then
 
                Found_Point := I;
                
@@ -262,10 +255,10 @@ procedure Main is
             
             for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
                
-               if Object.Control_Points(I)(CRV.X) - 4.0 <= GL.Types.Double(X) and then
-                 GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + 4.0 and then
-                 Object.Control_Points(I)(CRV.Y) - 4.0 <= GL.Types.Double(Y) and then
-                 GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + 4.0     then                  
+               if Object.Control_Points(I)(CRV.X) - D <= GL.Types.Double(X) and then
+                 GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + D and then
+                 Object.Control_Points(I)(CRV.Y) - D <= GL.Types.Double(Y) and then
+                 GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + D     then                  
                  
                  Object.Original_X := GL.Types.Double (X);
                  Object.Original_Y := GL.Types.Double (Y);
@@ -358,7 +351,9 @@ procedure Main is
 
    procedure Draw_Control_Polygon(Control_Points : CRV.Control_Points_Array) is separate;
 
-   procedure Draw_Knots_Control(Knot_Values : in CRV.Knot_Values_Array) is separate;
+   procedure Draw_Knots_Control(Knot_Values    : in CRV.Knot_Values_Array;
+                                Hovered_Knot   : Natural := 0;
+                                Selected_Knot  : Natural := 0) is separate;
 
    procedure Draw_Control_Points(Control_Points : CRV.Control_Points_Array;
                                  Hovered_Point  : Natural := 0;
@@ -403,6 +398,49 @@ begin
       
       Clear (Buffer_Bits'(others => True));
       
+      -- Select the hovered object
+      -- This code snippet will not run every frame, however is guaranteed to run when mouse
+      -- position changes.
+      --
+      declare
+         X, Y   : Glfw.Input.Mouse.Coordinate;
+      begin
+      
+         My_Window.Hovered_Point := 0;
+         My_Window.Hovered_Knot  := 0;      
+         
+         Get_Cursor_Pos(My_Window'Access, X, Y);
+         
+         for I in Positive range 1 .. My_Window.Num_Of_Control_Points loop
+            
+            if My_Window.Control_Points(I)(CRV.X) - D <= GL.Types.Double(X) and then
+               GL.Types.Double(X) <= My_Window.Control_Points(I)(CRV.X) + D and then
+               My_Window.Control_Points(I)(CRV.Y) - D <= GL.Types.Double(Y) and then
+               GL.Types.Double(Y) <= My_Window.Control_Points(I)(CRV.Y) + D     then
+               
+                  My_Window.Hovered_Point := I;
+               
+            end if;
+         end loop;
+         
+         -- Control points get precedence over knots
+         --
+         
+         if My_Window.Hovered_Point = 0 then
+       
+            for I in Positive range 1 .. My_Window.Num_Of_Knots loop
+            
+               if Calculate_Knot_H_Pos(My_Window.Knot_Values(I)) - D <= GL.Types.Double(X) and then
+                  GL.Types.Double(X) <= Calculate_Knot_H_Pos(My_Window.Knot_Values(I)) + D and then
+                  KNOTS_RULER_V_POS <= GL.Types.Double(Y) and then
+                  GL.Types.Double(Y) <= KNOTS_RULER_V_POS + D     then
+               
+                     My_Window.Hovered_Knot := I;
+               
+               end if;   
+            end loop;
+         end if;
+      end;
       
       --  Output info to screen
       --
@@ -446,6 +484,12 @@ begin
               My_Window.Control_Points(My_Window.Selected_Point)(CRV.Y) + My_Window.Delta_Y;
             
          end if;
+              
+         -- Draw the visualisation of the knot vector
+         --
+         Draw_Knots_Control(Knot_Values   => My_Window.Knot_Values,
+                            Selected_Knot => My_Window.Selected_Knot,
+                            Hovered_Knot  => My_Window.Hovered_Knot);
          
          -- Draw the control polygon and points
          --
@@ -456,11 +500,7 @@ begin
                                 Selected_Point => My_Window.Selected_Point,
                                 Hovered_Point  => My_Window.Hovered_Point);
          end if;
-         
-   -- Draw the visualisation of the knot vector
-   --
-   Draw_Knots_Control(My_Window.Knot_Values);
-         
+           
          -- Draw the curve. Use common knot values which might be relevant only
          -- to portion of algorithms.
          --    
