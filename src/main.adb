@@ -78,6 +78,8 @@ procedure Main is
    
    
    KNOTS_RULER_V_POS      : constant Gl.Types.Double := GL.Types.Double(WINDOW_HEIGHT) - 50.0;
+   KNOTS_RULER_LEFT_COORDINATE  : constant := 100.0;
+   KNOTS_RULER_RIGHT_COORDINATE : constant := GL.Types.Double(WINDOW_WIDTH) - 100.0;
    
    -- Types
    --------
@@ -96,6 +98,9 @@ procedure Main is
          6 => (CRV.X => 0.0,   CRV.Y => 0.0),
          others => (CRV.X => 0.0,   CRV.Y => 0.0));
       
+      -- Note to self - this was bad idea to use static array of maximal size and a sepearte value to 
+      -- represent it's actual size.
+      --
       Num_Of_Control_Points : Positive range 1 .. MAX_NUMBER_OF_CONTROL_POINTS := 6;
       
       Original_X, Original_Y : GL.Types.Double := 0.0;
@@ -116,6 +121,10 @@ procedure Main is
       Selected_Knot, Hovered_Knot : Natural := 0;
       
    end record;
+   
+   -- Separate Procedures and Functions
+   ------------------------------------
+   function Calculate_Knot_H_Pos(Knot_Value : in CRV.Parametrization_Type) return GL.Types.Double;
    
    -- Overrides
    --------------------------- 
@@ -165,13 +174,49 @@ procedure Main is
       use GL.Types.Doubles;
 
       use type Glfw.Input.Button_State;
+      
+      subtype Knot_Index_Type is Positive range  1 .. Object.Num_Of_Knots;
+      
+      procedure Swap_Knots(Index_1, Index_2 : Knot_Index_Type) is 
+         Temp : CRV.Parametrization_Type;
+      begin
+         Temp := Object.Knot_Values(Index_1);
+         Object.Knot_Values(Index_1) := Object.Knot_Values(Index_2);
+         Object.Knot_Values(Index_2) := temp;
+      end;
+      
    begin
  
-      if Object.Mouse_Button_State (0) = Glfw.Input.Pressed  and then Object.Selected_Point /= 0 then
+      if Object.Mouse_Button_State (0) = Glfw.Input.Pressed then
+         if Object.Selected_Point /= 0 then
          
-         Object.Delta_X := GL.Types.Double (X) - Object.Original_X;
-         Object.Delta_Y := GL.Types.Double (Y) - Object.Original_Y;
+            Object.Delta_X := GL.Types.Double (X) - Object.Original_X;
+            Object.Delta_Y := GL.Types.Double (Y) - Object.Original_Y;
          
+         elsif Object.Selected_Knot /= 0 then 
+         
+            if    GL.Types.Double(X) <= Calculate_Knot_H_Pos(0.0) then
+               Object.Knot_Values(Object.Selected_Knot) := 0.0;
+            elsif GL.Types.Double(X) >= Calculate_Knot_H_Pos(1.0) then
+               Object.Knot_Values(Object.Selected_Knot) := 1.0;
+            else
+               Object.Knot_Values(Object.Selected_Knot) := 
+                  (GL.Types.Double(X) - KNOTS_RULER_LEFT_COORDINATE) / (KNOTS_RULER_RIGHT_COORDINATE - KNOTS_RULER_LEFT_COORDINATE);
+            end if;
+            
+            while Object.Selected_Knot > Object.Knot_Values'First and then 
+                  Object.Knot_Values(Object.Selected_Knot - 1) > Object.Knot_Values(Object.Selected_Knot) loop
+               Swap_Knots(Object.Selected_Knot - 1, Object.Selected_Knot);
+               Object.Selected_Knot :=  Object.Selected_Knot - 1;
+            end loop;
+            
+            while Object.Selected_Knot < Object.Num_Of_Knots and then 
+                  Object.Knot_Values(Object.Selected_Knot + 1) < Object.Knot_Values(Object.Selected_Knot) loop
+               Swap_Knots(Object.Selected_Knot + 1, Object.Selected_Knot);
+               Object.Selected_Knot :=  Object.Selected_Knot + 1;
+            end loop;
+            
+         end if;   
       end if;
       
    end Mouse_Position_Changed;
@@ -248,27 +293,24 @@ procedure Main is
             end if;
             
             Object.Selected_Point := 0;
+            Object.Selected_Knot  := 0;
             
          else
             
-            Object.Selected_Point := 0;
+            if Object.Hovered_Point /= 0 then
             
-            for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
-               
-               if Object.Control_Points(I)(CRV.X) - D <= GL.Types.Double(X) and then
-                 GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + D and then
-                 Object.Control_Points(I)(CRV.Y) - D <= GL.Types.Double(Y) and then
-                 GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + D     then                  
-                 
-                 Object.Original_X := GL.Types.Double (X);
-                 Object.Original_Y := GL.Types.Double (Y);
+               Object.Original_X := GL.Types.Double (X);
+               Object.Original_Y := GL.Types.Double (Y);
                          
-                 Object.Selected_Point := I;
-                 Object.Delta_X := 0.0;
-                 Object.Delta_Y := 0.0;
-                 
-               end if;
-            end loop;
+               Object.Selected_Point := Object.Hovered_Point;
+               Object.Delta_X := 0.0;
+               Object.Delta_Y := 0.0;
+            
+            elsif Object.Hovered_Knot /= 0 then
+            
+               Object.Selected_Knot := Object.Hovered_Knot;
+            
+            end if;
          end if;
       end if;
    end Mouse_Button_Changed;
@@ -329,7 +371,7 @@ procedure Main is
    
    -- Constants
    ------------
-   BASE_TITLE : constant String := "Curve Test ";
+   BASE_TITLE : constant String := "Ada Curve ";
  
    -- Variables
    ------------
@@ -342,7 +384,6 @@ procedure Main is
      
    -- Separate Procedures and Functions
    ------------------------------------
-   
    function Calculate_Knot_H_Pos(Knot_Value : in CRV.Parametrization_Type) return GL.Types.Double is separate;
    
    procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
@@ -451,7 +492,7 @@ begin
               
          -- Draw the visualisation of the knot vector
          --
-         Draw_Knots_Control(Knot_Values   => My_Window.Knot_Values,
+         Draw_Knots_Control(Knot_Values   => My_Window.Knot_Values(1..My_Window.Num_Of_Knots),
                             Selected_Knot => My_Window.Selected_Knot,
                             Hovered_Knot  => My_Window.Hovered_Knot);
          
@@ -468,7 +509,7 @@ begin
          -- Draw the curve. Use common knot values which might be relevant only
          -- to portion of algorithms.
          --    
-         Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm, My_Window.Knot_Values);
+         Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm, My_Window.Knot_Values(1..My_Window.Num_Of_Knots));
          
       end;
       

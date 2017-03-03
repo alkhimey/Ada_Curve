@@ -26,11 +26,9 @@ with GL.Types;
 
 separate (Main)
 function Calculate_Knot_H_Pos(Knot_Value : in CRV.Parametrization_Type) return GL.Types.Double is
-
-   LEFT_COORDINATE  : constant := 100.0;
-   RIGHT_COORDINATE : constant := GL.Types.Double(WINDOW_WIDTH) - 100.0;
    
 begin
-    return LEFT_COORDINATE + GL.Types.Double(Knot_Value) * (RIGHT_COORDINATE - LEFT_COORDINATE);
+    return KNOTS_RULER_LEFT_COORDINATE + 
+       GL.Types.Double(Knot_Value) * (KNOTS_RULER_RIGHT_COORDINATE - KNOTS_RULER_LEFT_COORDINATE);
 
 end Calculate_Knot_H_Pos;
