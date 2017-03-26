@@ -95,7 +95,7 @@ procedure Main is
          3 => (CRV.X => 100.0, CRV.Y => 300.0),
          4 => (CRV.X => 500.0, CRV.Y => 400.0),
          5 => (CRV.X => 200.0, CRV.Y => 200.0),
-         6 => (CRV.X => 0.0,   CRV.Y => 0.0),
+         6 => (CRV.X => 30.0,  CRV.Y => 150.0),
          others => (CRV.X => 0.0,   CRV.Y => 0.0));
       
       -- Note to self - this was bad idea to use static array of maximal size and a sepearte value to 
@@ -115,6 +115,7 @@ procedure Main is
       
       Display_Control_Polygon : Boolean := True;
       
+      -- "if we want to define a B-spline curve of degree p with n + 1 control points, we have to supply n + p + 2"
       Knot_Values : CRV.Knot_Values_Array (1 .. 10) := (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
       Num_Of_Knots : Positive range 1 ..  103 := 10; -- TODO
       

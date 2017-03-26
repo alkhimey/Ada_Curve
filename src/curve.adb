@@ -106,6 +106,8 @@ package body Curve is
    --        Let Pi,r = (1 - ai,r) Pi-1,r-1 + ai,r Pi,r-1 
    --  Pk-s,p-s is the point C(u).
    --
+   -- Assumption: Knot_Values is sorted
+   --
    function Eval_De_Boor      ( Control_Points        : in Control_Points_Array;
                                 Knot_Values           : in Knot_Values_Array;
                                 T                     : in Parametrization_Type;
@@ -135,29 +137,53 @@ package body Curve is
       
       
    begin
-   
-      Is_Outside_The_Domain := False;
-   
-      --  Determine knot segment and required multiplicty
+      -- Check if T is inside the domain
       --
-      for I in Knot_Values'First .. Knot_Values'Last loop
-         -- TODO: Deal with degree 0!
-         if Knot_Values( I ) = T then
-            H := H - 1;
-            S := S + 1;
-            K := I;
-         elsif I < Knot_Values'Last and then Knot_Values( I + 1 ) > T and then T > Knot_Values( I ) then
-            K := I;
-         end if;        
-      end loop;
-      
       if T < Knot_Values( Knot_Values'First + Degree) or else 
          T > Knot_Values( Knot_Values'Last  - Degree) then
       
           Is_Outside_The_Domain := True;
           return ORIGIN_POINT;
          
+      else
+         Is_Outside_The_Domain := False;
       end if;
+      
+      --  Determine knot segment and required multiplicty
+      --
+      K := Knot_Values'Last; -- TODO: Is this correct?
+      
+      for I in Knot_Values'First .. Knot_Values'Last loop
+         -- Notice: If T = Knot_Values( I ) and I is a multiple knot we want the index
+         --         of the last knot in the multiplicity. Therfore the loop is not terminated.
+         if I < Knot_Values'Last and then Knot_Values( I + 1 ) > T and then T >= Knot_Values( I ) then
+            K := I;
+         end if;        
+      end loop;
+      
+      -- Calculate multiplicity
+      --
+      declare
+         Multiplicity : Natural := 0;
+      begin 
+      
+         for I in Knot_Values'Range loop
+            if Knot_Values( I ) = T then
+               Multiplicity := Multiplicity + 1;
+            end if;   
+         end loop;
+      
+         if Multiplicity > Degree then
+            -- TODO: Should we seperate Degree and the rest?
+            --return Control_Points
+            H := 0;
+            S := Degree;
+         else
+            H := Degree - Multiplicity;
+            S := Multiplicity;
+         end if;
+      end;
+      
       
       -- Prepare the points
       --
