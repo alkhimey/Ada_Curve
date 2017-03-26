@@ -17,6 +17,15 @@ Fun and experimentation with curve drawing algorithms using Ada.
 
 One needs to install cmake to build glfw3 and gprbuild to build OpenGLAda. 
 
+## Clone
+
+In order to recieve the OpenGLAda submodule, you need to clone recursively:
+
+```bash
+git clone https://github.com/alkhimey/Ada_Curve.git --recursive
+```
+
+
 ## Build
 
 The command ```make``` will execute:

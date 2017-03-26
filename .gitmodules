@@ -1,0 +1,5 @@
+[submodule "OpenGLAda"]
+	path = OpenGLAda
+	url = https://github.com/flyx/OpenGLAda.git
+        branch = master
+
