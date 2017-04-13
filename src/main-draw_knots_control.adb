@@ -29,7 +29,6 @@ procedure Draw_Knots_Control(Knot_Values    : in CRV.Knot_Values_Array;
                              Hovered_Knot   : Natural := 0;
                              Selected_Knot  : Natural := 0) is
    
-
    
 begin
    -- Draw the ruler
@@ -79,5 +78,35 @@ begin
      
       end;
    end loop;
-    
+   
+   -- Draw a specific knot value above the ruler.
+   --
+   declare
+   
+      type Fixed_For_Printing_Type is delta 0.001 range 0.0 .. 1.0001 ;
+   
+      Priority_Knot : Natural := (if Selected_Knot /= 0 then Selected_Knot else Hovered_Knot);
+      
+      Color : GL.Types.Colors.Color := (if Selected_Knot /= 0 then (0.3, 0.3, 0.3, 0.0) else (0.0, 0.5, 0.0, 0.0));
+      
+   begin
+      if Font_Loaded and then Priority_Knot /= 0 then
+         Modelview.Push;
+   
+         -- Set origin at bottom left 
+         Modelview.Apply_Multiplication((( 1.0,  0.0, 0.0, 0.0),
+                                         ( 0.0, -1.0, 0.0, 0.0),
+                                         ( 0.0,  0.0, 1.0, 0.0),
+                                         ( 0.0,  0.0, 0.0, 1.0) ));  
+   
+         Modelview.Apply_Translation ( Double(Calculate_Knot_H_Pos(Knot_Values(Priority_Knot))), 
+                                       - Double(KNOTS_RULER_V_POS) + 2.0 * D, 
+                                      0.0);  
+         Gl.Immediate.Set_Color (Color);
+         Info_Font.Render ( Fixed_For_Printing_Type'Image(Fixed_For_Printing_Type(Knot_Values(Priority_Knot))), (Front => True, others => False));
+     
+         Modelview.Pop;
+      end if;
+   end;
+   
 end Draw_Knots_Control;
