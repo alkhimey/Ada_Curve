@@ -83,7 +83,9 @@ package Curve is
    function Eval_De_Boor      ( Control_Points        : in Control_Points_Array;
                                 Knot_Values           : in Knot_Values_Array;
                                 T                     : in Parametrization_Type;
-                                Is_Outside_The_Domain : out Boolean) return Point_Type;
+                                Is_Outside_The_Domain : out Boolean) return Point_Type with
+      Pre => Control_Points'First = Knot_Values'First and then   -- Implementation depends on this
+             Knot_Values'Length - Control_Points'Length - 1 > 0; -- At least 0 degree 
    
    function Eval_Catmull_Rom ( Control_Points : in Control_Points_Array;
                                Segment        : in Positive;
