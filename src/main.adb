@@ -117,7 +117,7 @@ procedure Main is
       
       -- "if we want to define a B-spline curve of degree p with n + 1 control points, we have to supply n + p + 2"
       Knot_Values : CRV.Knot_Values_Array (1 .. 10) := (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
-      Num_Of_Knots : Positive range 1 ..  103 := 10; -- TODO
+      Num_Of_Knots : Positive range 1 ..  103 := 10; -- TODO?
       
       Selected_Knot, Hovered_Knot : Natural := 0;
       
@@ -307,7 +307,7 @@ procedure Main is
                Object.Delta_X := 0.0;
                Object.Delta_Y := 0.0;
             
-            elsif Object.Hovered_Knot /= 0 then
+            elsif Object.Hovered_Knot /= 0 and then Object.Algorithm = DE_BOOR then 
             
                Object.Selected_Knot := Object.Hovered_Knot;
             
@@ -338,7 +338,9 @@ procedure Main is
             Object.Help_Overlay_Required := True;
             
          elsif Key = Glfw.Input.Keys.A then
-            
+         
+            Object.Selected_Knot := 0; -- Drop knot
+
             if Object.Algorithm = Algorithm_Type'Last then 
                Object.Algorithm := Algorithm_Type'First;
             else
@@ -354,6 +356,7 @@ procedure Main is
                Object.Enable_Callback (Glfw.Windows.Callbacks.Mouse_Button);
             else
                Object.Selected_Point := 0;
+               Object.Selected_Knot := 0;
                Object.Disable_Callback (Glfw.Windows.Callbacks.Mouse_Position);
                Object.Disable_Callback (Glfw.Windows.Callbacks.Mouse_Button);
             end if;
@@ -490,16 +493,21 @@ begin
               My_Window.Control_Points(My_Window.Selected_Point)(CRV.Y) + My_Window.Delta_Y;
             
          end if;
-              
-         -- Draw the visualisation of the knot vector
-         --
-         Draw_Knots_Control(Knot_Values   => My_Window.Knot_Values(1..My_Window.Num_Of_Knots),
-                            Selected_Knot => My_Window.Selected_Knot,
-                            Hovered_Knot  => My_Window.Hovered_Knot);
          
-         -- Draw the control polygon and points
-         --
+         
          if My_Window.Display_Control_Polygon then
+         
+            -- Draw the visualisation of the knot vector
+            --
+            if My_Window.Algorithm = DE_BOOR then
+               Draw_Knots_Control(Knot_Values   => My_Window.Knot_Values(1..My_Window.Num_Of_Knots),
+                                  Selected_Knot => My_Window.Selected_Knot,
+                                  Hovered_Knot  => My_Window.Hovered_Knot);
+            end if;
+            
+            
+            -- Draw the control polygon and points
+            --
             Draw_Control_Polygon(Control_Points => Control_Points_For_Drawing);
             
             Draw_Control_Points(Control_Points => Control_Points_For_Drawing,

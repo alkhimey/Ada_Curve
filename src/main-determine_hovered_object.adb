@@ -47,8 +47,7 @@ begin
          
    -- Control points get precedence over knots
    --
-        
-   if My_Window.Hovered_Point = 0 then
+   if My_Window.Hovered_Point = 0 and then My_Window.Algorithm = DE_BOOR then
        
       for I in Positive range 1 .. My_Window.Num_Of_Knots loop
             
