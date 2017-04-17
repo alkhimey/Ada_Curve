@@ -128,9 +128,7 @@ package body Curve is
          ( Knot_Index_Type, 
            Natural range 0 .. Degree) of Point_Type;
       
-      
-      H : Natural := Degree;
-      S : Natural := 0;
+      S : Natural := 0; -- Mulltiplicity
       K : Knot_Index_Type;
       P : P_Type := (others => (others => Point_Type'(others => 0.0) ) );
       
@@ -149,51 +147,50 @@ package body Curve is
          Is_Outside_The_Domain := False;
       end if;
       
-      --  Determine knot segment and required multiplicty
+      --  Determine knot segment
       --
-      K := Knot_Values'Last; -- TODO: Is this correct?
+      K := Knot_Values'Last;
       
-      for I in Knot_Values'First .. Knot_Values'Last loop
-         -- Notice: If T = Knot_Values( I ) and I is a multiple knot we want the index
-         --         of the last knot in the multiplicity. Therfore the loop is not terminated.
-         if I < Knot_Values'Last and then Knot_Values( I + 1 ) > T and then T >= Knot_Values( I ) then
+      for I in Knot_Values'First + Degree .. Knot_Values'Last - Degree loop
+         if Knot_Values( I ) <=  T and then T < Knot_Values( I + 1 ) then
             K := I;
          end if;        
       end loop;
       
       -- Calculate multiplicity
       --
-      declare
-         Multiplicity : Natural := 0;
-      begin 
+      S := 0;
+
+      for I in Knot_Values'Range loop
+         if Knot_Values( I ) = T then
+            S := S + 1;
+         end if;   
+      end loop;
       
-         for I in Knot_Values'Range loop
-            if Knot_Values( I ) = T then
-               Multiplicity := Multiplicity + 1;
-            end if;   
-         end loop;
-      
-         if Multiplicity > Degree then
-            -- TODO: Should we seperate Degree and the rest?
-            --return Control_Points
-            H := 0;
-            S := Degree;
-         else
-            H := Degree - Multiplicity;
-            S := Multiplicity;
-         end if;
-      end;
-      
+      if S > Degree then
+
+        -- This is a special case. When the spline is clamped then 
+        -- the value "T = Knot_Values( Knot_Value'Last - Degree )" is 
+        -- outside the domain. But since we desire a nice drawing, we
+        -- extrapolate it into the last control point.
+        -- 
+        if T = Knot_Values( Knot_Values'Last ) then
+            return Control_Points( Control_Points'Last );
+        end if;
+
+         -- TODO: It is not straight clear what is the correct resolution here...
+         S := Degree;
+      end if;
       
       -- Prepare the points
       --
       for I in Knot_Index_Type range K - Degree .. K - S loop
-         P(I, 0) := Control_Points( I + Knot_Values'First - Control_Points'First ); 
+         P(I, 0) := Control_Points( I ); -- Assumed here that Knot_Values'First = Control_Points'First
       end loop;
       
       -- Preform knot insertion H times
       --
-      for R in Knot_Index_Type range 1 .. H loop
+      for R in Knot_Index_Type range 1 .. Degree - S loop
          for I in Knot_Index_Type range K - Degree + R .. K - S loop
             declare
                A : Parametrization_Type := Alpha(I, R);
