@@ -121,6 +121,8 @@ procedure Main is
       
       Selected_Knot, Hovered_Knot : Natural := 0;
       
+      Hovered_Ruler : Boolean := False;
+      
    end record;
    
    -- Separate Procedures and Functions
@@ -396,16 +398,21 @@ procedure Main is
 
    procedure Draw_Control_Polygon(Control_Points : CRV.Control_Points_Array) is separate;
 
+   -- TODO: Precondition - not both hovered at the same time
+   -- TODO: Precondition - not hovered and selected at the same time
    procedure Draw_Knots_Control(Knot_Values    : in CRV.Knot_Values_Array;
                                 Hovered_Knot   : Natural := 0;
-                                Selected_Knot  : Natural := 0) is separate;
+                                Selected_Knot  : Natural := 0;
+                                Hovered_Ruler  : Boolean := False) is separate;
 
+   -- TODO: Precondition - not hovered and selected at the same time
    procedure Draw_Control_Points(Control_Points : CRV.Control_Points_Array;
                                  Hovered_Point  : Natural := 0;
                                  Selected_Point : Natural := 0) is separate;
    
    procedure Draw_Help_Overlay is separate;
    
+   -- TODO: Postcondition - not hovered and selected at the same time
    procedure Determine_Hovered_Object is separate;
 
 begin
@@ -502,7 +509,8 @@ begin
             if My_Window.Algorithm = DE_BOOR then
                Draw_Knots_Control(Knot_Values   => My_Window.Knot_Values(1..My_Window.Num_Of_Knots),
                                   Selected_Knot => My_Window.Selected_Knot,
-                                  Hovered_Knot  => My_Window.Hovered_Knot);
+                                  Hovered_Knot  => My_Window.Hovered_Knot,
+                                  Hovered_Ruler => My_Window.Hovered_Ruler);
             end if;
             
             

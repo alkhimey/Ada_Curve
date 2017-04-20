@@ -27,9 +27,11 @@ with GL.Types;
 separate (Main)
 procedure Draw_Knots_Control(Knot_Values    : in CRV.Knot_Values_Array;
                              Hovered_Knot   : Natural := 0;
-                             Selected_Knot  : Natural := 0) is
-   
-   
+                             Selected_Knot  : Natural := 0;
+                             Hovered_Ruler  : Boolean := False) is
+
+   Cursor_X, Cursor_Y : Glfw.Input.Mouse.Coordinate;
+
 begin
    -- Draw the ruler
    --
@@ -79,6 +81,37 @@ begin
       end;
    end loop;
    
+   -- Draw a "ghost" knot, when only the ruler is hovered
+   --
+   if Hovered_Ruler then
+   
+      Get_Cursor_Pos(My_Window'Access, Cursor_X, Cursor_Y);
+   
+      declare
+         Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Polygon);         
+      begin
+         Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
+         
+         GL.Immediate.Add_Vertex(Token, Vector2'
+                                   (Gl.Types.Double(Cursor_X) + D, 
+                                    KNOTS_RULER_V_POS         + D));
+         
+         GL.Immediate.Add_Vertex(Token, Vector2'
+                                   (Gl.Types.Double(Cursor_X) - D, 
+                                    KNOTS_RULER_V_POS         + D));
+         
+         GL.Immediate.Add_Vertex(Token, Vector2'
+                                   (Gl.Types.Double(Cursor_X) - D, 
+                                    KNOTS_RULER_V_POS         - D));
+         
+         GL.Immediate.Add_Vertex(Token, Vector2'
+                                   (Gl.Types.Double(Cursor_X) + D, 
+                                    KNOTS_RULER_V_POS         - D));
+     
+      end;
+   
+   end if;
+   
    -- Draw a specific knot value above the ruler.
    --
    declare
@@ -100,7 +133,7 @@ begin
                                          ( 0.0,  0.0, 0.0, 1.0) ));  
    
          Modelview.Apply_Translation ( Double(Calculate_Knot_H_Pos(Knot_Values(Priority_Knot))), 
-                                       - Double(KNOTS_RULER_V_POS) + 2.0 * D, 
+                                       - Double(KNOTS_RULER_V_POS) + 6.0 * D, 
                                       0.0);  
          Gl.Immediate.Set_Color (Color);
          Info_Font.Render ( Fixed_For_Printing_Type'Image(Fixed_For_Printing_Type(Knot_Values(Priority_Knot))), (Front => True, others => False));
