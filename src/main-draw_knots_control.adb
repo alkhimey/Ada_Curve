@@ -88,7 +88,7 @@ begin
       Get_Cursor_Pos(My_Window'Access, Cursor_X, Cursor_Y);
    
       declare
-         Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Polygon);         
+         Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Line_Loop);         
       begin
          Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
          
