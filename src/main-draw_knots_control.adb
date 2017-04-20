@@ -90,7 +90,7 @@ begin
       declare
          Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Line_Loop);         
       begin
-         Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
+         Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.0, 0.5, 0.0, 0.0));
          
          GL.Immediate.Add_Vertex(Token, Vector2'
                                    (Gl.Types.Double(Cursor_X) + D, 
