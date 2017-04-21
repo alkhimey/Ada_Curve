@@ -61,7 +61,7 @@ begin
       
       Modelview.Apply_Translation (15.0, -Double(Info_Font.Line_Height), 0.0);
       
-      Info_Font.Render ("Use right mouse to add or delete points and left to move them", (Front => True, others => False));
+      Info_Font.Render ("Use right mouse to add or remove points and left to move them", (Front => True, others => False));
       
       Modelview.Apply_Translation ( 0.0, - 2.0 * Double(Info_Font.Line_Height), 0.0);  
       

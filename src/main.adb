@@ -76,6 +76,8 @@ procedure Main is
    MAX_NUMBER_OF_CONTROL_POINTS : constant Positive := 99;
    MIN_NUMBER_OF_CONTROL_POINTS : constant Positive := 4; -- For Catmull-Rom
    
+   MAX_NUMBER_OF_KNOTS : constant Positive := 99;
+   
    
    KNOTS_RULER_V_POS      : constant Gl.Types.Double := GL.Types.Double(WINDOW_HEIGHT) - 50.0;
    KNOTS_RULER_LEFT_COORDINATE  : constant := 100.0;
@@ -115,9 +117,20 @@ procedure Main is
       
       Display_Control_Polygon : Boolean := True;
       
-      -- "if we want to define a B-spline curve of degree p with n + 1 control points, we have to supply n + p + 2"
-      Knot_Values : CRV.Knot_Values_Array (1 .. 10) := (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
-      Num_Of_Knots : Positive range 1 ..  103 := 10; -- TODO?
+      Knot_Values : CRV.Knot_Values_Array (1 .. MAX_NUMBER_OF_KNOTS) := 
+         (1  => 0.0, 
+          2  => 0.1, 
+          3  => 0.2, 
+          4  => 0.3, 
+          5  => 0.4, 
+          6  => 0.5,
+          7  => 0.6,
+          8  => 0.7,
+          9  => 0.8,
+          10 => 0.9,
+          others => 0.0);
+      
+      Num_Of_Knots : Positive range 1 .. MAX_NUMBER_OF_KNOTS := 10; 
       
       Selected_Knot, Hovered_Knot : Natural := 0;
       
@@ -128,6 +141,7 @@ procedure Main is
    -- Separate Procedures and Functions
    ------------------------------------
    function Calculate_Knot_H_Pos(Knot_Value : in CRV.Parametrization_Type) return GL.Types.Double;
+   function Calculate_Knot_Value(H_Pos : in Glfw.Input.Mouse.Coordinate) return CRV.Parametrization_Type;
    
    -- Overrides
    --------------------------- 
@@ -235,39 +249,67 @@ procedure Main is
       use type Glfw.Input.Button_State;
       use type Glfw.Input.Mouse.Coordinate;
       
-      Found_Point   : Natural := 0;
       X, Y    : Glfw.Input.Mouse.Coordinate;
    begin
       
       Object.Get_Cursor_Pos (X, Y);            
       
-      if Button = Glfw.Input.Mouse.Right_Button  and then Object.Selected_Point = 0 and then State = Glfw.Input.Pressed then
+      if Button = Glfw.Input.Mouse.Right_Button and then State = Glfw.Input.Pressed and then 
+         Object.Selected_Point = 0 and then Object.Selected_Knot = 0  then
          
-         for I in Positive range 1 .. Object.Num_Of_Control_Points Loop
-            
-            if Object.Control_Points(I)(CRV.X) - D <= GL.Types.Double(X) and then
-              GL.Types.Double(X) <= Object.Control_Points(I)(CRV.X) + D and then
-              Object.Control_Points(I)(CRV.Y) - D <= GL.Types.Double(Y) and then
-              GL.Types.Double(Y) <= Object.Control_Points(I)(CRV.Y) + D     then
-
-               Found_Point := I;
-               
-            end if;
-         end loop;
-         
-         
-         if Found_Point /= 0 then
+         -- Remove point
+         if Object.Hovered_Point /= 0 then
             
             if Object.Num_Of_Control_Points > MIN_NUMBER_OF_CONTROL_POINTS then
                
-               for I in Positive range Found_Point .. Object.Num_Of_Control_Points - 1 loop
+               for I in Positive range Object.Hovered_Point .. Object.Num_Of_Control_Points - 1 loop
                   Object.Control_Points(I) := Object.Control_Points(I + 1);
                end loop;
                Object.Num_Of_Control_Points := Object.Num_Of_Control_Points - 1;   
                
             end if;
+         
+         -- Remove knot
+         elsif Object.Hovered_Knot /= 0 then 
+         
+            if Object.Num_Of_Knots - Object.Num_Of_Control_Points - 1 > 0 then
+               for I in Positive range Object.Hovered_Knot .. Object.Num_Of_Knots - 1 loop
+                  Object.Knot_Values(I) := Object.Knot_Values(I + 1);
+               end loop;
+               Object.Num_Of_Knots := Object.Num_Of_Knots - 1;  
+            end if; 
             
+         -- Add knot
+         elsif Object.Hovered_Ruler then
+         
+            declare
+               New_Knot : CRV.Parametrization_Type := Calculate_Knot_Value(X);
+               Found : Boolean := False;
+            begin
+         
+               if Object.Num_Of_Knots < Object.Knot_Values'Last then
+                  for I in reverse Object.Knot_Values'First .. Object.Num_Of_Knots loop
+                
+                     if New_Knot >= Object.Knot_Values(I) then
+                        Object.Knot_Values(I + 1) := New_Knot;
+                        Found := True;
+                        exit;
+                     else 
+                        Object.Knot_Values(I + 1) := Object.Knot_Values(I);
+                     end if;
+        
+                  end loop;
+                  
+                  if not Found then 
+                     Object.Knot_Values(Object.Knot_Values'First) := New_Knot;
+                  end if;
+                  
+                  Object.Num_Of_Knots := Object.Num_Of_Knots + 1;
+               end if;
+            end;
+         -- Add point
          else
+            -- TODO: Deal with knot/degree!
             
             if Object.Num_Of_Control_Points < MAX_NUMBER_OF_CONTROL_POINTS and then
               X >= 0.0 and then X <= Glfw.Input.Mouse.Coordinate(WINDOW_WIDTH) and then 
@@ -391,6 +433,7 @@ procedure Main is
    -- Separate Procedures and Functions
    ------------------------------------
    function Calculate_Knot_H_Pos(Knot_Value : in CRV.Parametrization_Type) return GL.Types.Double is separate;
+   function Calculate_Knot_Value(H_Pos : in Glfw.Input.Mouse.Coordinate) return CRV.Parametrization_Type is separate;
    
    procedure Draw_Curve(Control_Points : in CRV.Control_Points_Array;
                         Algorithm      : in Algorithm_Type;
@@ -481,6 +524,20 @@ begin
                              Ada.Strings.Fixed.Trim(Integer'Image(MAX_NUMBER_OF_CONTROL_POINTS), Ada.Strings.Left)  &
                              " Points"
                              , (Front => True, others => False));
+         
+         if My_Window.Algorithm = DE_BOOR then
+         
+            Modelview.Apply_Translation (190.0, 0.0, 0.0);
+            Info_Font.Render (Ada.Strings.Fixed.Trim(Integer'Image(My_Window.Num_Of_Knots), Ada.Strings.Left) &
+                                " / " &
+                                Ada.Strings.Fixed.Trim(Integer'Image(My_Window.Knot_Values'Last), Ada.Strings.Left)  &
+                                " Knots"
+                                , (Front => True, others => False));
+                                
+            Modelview.Apply_Translation (190.0, 0.0, 0.0);
+            Info_Font.Render("Degree is " & Integer'Image(My_Window.Num_Of_Knots - My_Window.Num_Of_Control_Points - 1) ,  (Front => True, others => False));
+         
+         end if;
          
          
          Modelview.Pop;
