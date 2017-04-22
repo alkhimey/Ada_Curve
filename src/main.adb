@@ -88,18 +88,22 @@ procedure Main is
    type Test_Window is new Glfw.Windows.Window with record
       
       Control_Points : CRV.Control_Points_Array(1..Num_Of_Control_Points_Type'Last) := 
-        (1 => (CRV.X => 100.0, CRV.Y => 100.0),
-         2 => (CRV.X => 50.0,  CRV.Y => 200.0),
-         3 => (CRV.X => 100.0, CRV.Y => 300.0),
-         4 => (CRV.X => 500.0, CRV.Y => 400.0),
-         5 => (CRV.X => 200.0, CRV.Y => 200.0),
-         6 => (CRV.X => 30.0,  CRV.Y => 150.0),
+        (1 =>  (CRV.X => 10.0,  CRV.Y => 100.0),
+         2 =>  (CRV.X => 11.0,  CRV.Y => 121.0),
+         3 =>  (CRV.X => 15.0,  CRV.Y => 225.0),
+         4 =>  (CRV.X => 17.0,  CRV.Y => 289.0),
+         5 =>  (CRV.X => 20.0,  CRV.Y => 400.0),
+         6 =>  (CRV.X => 21.0,  CRV.Y => 441.0),
+         7 =>  (CRV.X => 22.0,  CRV.Y => 484.0),
+         8 =>  (CRV.X => 100.0, CRV.Y => 484.0),
+         9 =>  (CRV.X => 150.0, CRV.Y => 484.0),
+         10 => (CRV.X => 250.0, CRV.Y => 484.0),
          others => (CRV.X => 0.0,   CRV.Y => 0.0));
       
       -- Note to self - this was bad idea to use static array of maximal size and a sepearte value to 
       -- represent it's actual size.
       --
-      Num_Of_Control_Points : Num_Of_Control_Points_Type := 6;
+      Num_Of_Control_Points : Num_Of_Control_Points_Type := 10;
       
       Original_X, Original_Y : GL.Types.Double := 0.0;
       Delta_X, Delta_Y : GL.Types.Double := 0.0;
@@ -115,18 +119,21 @@ procedure Main is
       
       Knot_Values : CRV.Knot_Values_Array (1 .. Num_Of_Knots_Type'Last) := 
          (1  => 0.0, 
-          2  => 0.1, 
-          3  => 0.2, 
-          4  => 0.3, 
-          5  => 0.4, 
+          2  => 0.0, 
+          3  => 0.0, 
+          4  => 0.1, 
+          5  => 0.3, 
           6  => 0.5,
-          7  => 0.6,
-          8  => 0.7,
-          9  => 0.8,
+          7  => 0.5,
+          8  => 0.5,
+          9  => 0.7,
           10 => 0.9,
+          11 => 1.0,
+          12 => 1.0,
+          13 => 1.0,
           others => 0.0);
       
-      Num_Of_Knots : Num_Of_Knots_Type := 10; 
+      Num_Of_Knots : Num_Of_Knots_Type := 13; 
       
       Selected_Knot, Hovered_Knot : Natural := 0;
       

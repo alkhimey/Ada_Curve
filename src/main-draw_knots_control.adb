@@ -132,8 +132,8 @@ begin
                                          ( 0.0,  0.0, 1.0, 0.0),
                                          ( 0.0,  0.0, 0.0, 1.0) ));  
    
-         Modelview.Apply_Translation ( Double(Calculate_Knot_H_Pos(Knot_Values(Priority_Knot))), 
-                                       - Double(KNOTS_RULER_V_POS) + 6.0 * D, 
+         Modelview.Apply_Translation ( Double(Calculate_Knot_H_Pos(Knot_Values(Priority_Knot)) - 6.0 * D), 
+                                       - Double(KNOTS_RULER_V_POS) + 2.0 * D, 
                                       0.0);  
          Gl.Immediate.Set_Color (Color);
          Info_Font.Render ( Fixed_For_Printing_Type'Image(Fixed_For_Printing_Type(Knot_Values(Priority_Knot))), (Front => True, others => False));
