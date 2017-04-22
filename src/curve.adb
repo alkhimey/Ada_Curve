@@ -149,7 +149,7 @@ package body Curve is
       
       --  Determine knot segment
       --
-      K := Knot_Values'Last;
+      K := Knot_Values'Last - Degree;
       
       for I in Knot_Values'First + Degree .. Knot_Values'Last - Degree - 1 loop
          if Knot_Values( I ) <=  T and then T < Knot_Values( I + 1 ) then
