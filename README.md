@@ -13,7 +13,7 @@ Fun and experimentation with curve drawing algorithms using Ada.
 * Lagrange interplation on equidistant nodes
 * Lagrange interpolation on Chavyshev nodes
 
-![Screenshot](screen1.png)
+![Showing different algorithms](screen1.gif)
 
 ## Dependencies
 
@@ -38,9 +38,8 @@ gprbuild  -p -P adacurve.gpr -XWindowing_System=x11 -XGLFW_Version=3
 
 ## Run
 
-![Screenshot](screen2.gif)
+![Moving control points with De-Boor](screen2.gif)
 
-![Screenshot](screen3.gif)
 
 The command ```make run``` will execute:
 
@@ -61,6 +60,7 @@ When displaying a B-Spline curve (De Boor algorithm):
 
 * Press ```U``` to transform the knot vector into a uniform and clamped vector.
 
+![Playing with knot vector with De-Boor](screen3.gif)
 
 ## Known issues
 
