@@ -151,7 +151,7 @@ package body Curve is
       --
       K := Knot_Values'Last;
       
-      for I in Knot_Values'First + Degree .. Knot_Values'Last - Degree loop
+      for I in Knot_Values'First + Degree .. Knot_Values'Last - Degree - 1 loop
          if Knot_Values( I ) <=  T and then T < Knot_Values( I + 1 ) then
             K := I;
          end if;        
