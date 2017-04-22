@@ -138,10 +138,12 @@ procedure Main is
       
    end record;
    
-   -- Separate Procedures and Functions
+   -- Fwd Declared Procedures and Functions
    ------------------------------------
    function Calculate_Knot_H_Pos(Knot_Value : in CRV.Parametrization_Type) return GL.Types.Double;
    function Calculate_Knot_Value(H_Pos : in Glfw.Input.Mouse.Coordinate) return CRV.Parametrization_Type;
+      
+   function Calculate_B_Spline_Degree return Integer;
    
    -- Overrides
    --------------------------- 
@@ -272,12 +274,10 @@ procedure Main is
          -- Remove knot
          elsif Object.Hovered_Knot /= 0 then 
          
-            if Object.Num_Of_Knots - Object.Num_Of_Control_Points - 1 > 0 then
-               for I in Positive range Object.Hovered_Knot .. Object.Num_Of_Knots - 1 loop
-                  Object.Knot_Values(I) := Object.Knot_Values(I + 1);
-               end loop;
-               Object.Num_Of_Knots := Object.Num_Of_Knots - 1;  
-            end if; 
+            for I in Positive range Object.Hovered_Knot .. Object.Num_Of_Knots - 1 loop
+               Object.Knot_Values(I) := Object.Knot_Values(I + 1);
+            end loop;
+            Object.Num_Of_Knots := Object.Num_Of_Knots - 1;  
             
          -- Add knot
          elsif Object.Hovered_Ruler then
@@ -308,9 +308,7 @@ procedure Main is
                end if;
             end;
          -- Add point
-         else
-            -- TODO: Deal with knot/degree!
-            
+         else            
             if Object.Num_Of_Control_Points < MAX_NUMBER_OF_CONTROL_POINTS and then
               X >= 0.0 and then X <= Glfw.Input.Mouse.Coordinate(WINDOW_WIDTH) and then 
               Y >= 0.0 and then Y <= Glfw.Input.Mouse.Coordinate(WINDOW_HEIGHT) then
@@ -458,6 +456,12 @@ procedure Main is
    -- TODO: Postcondition - not hovered and selected at the same time
    procedure Determine_Hovered_Object is separate;
 
+   
+   function Calculate_B_Spline_Degree return Integer is
+   begin
+      return My_Window.Num_Of_Knots - My_Window.Num_Of_Control_Points - 1;
+   end;
+
 begin
    
    Glfw.Init;
@@ -535,8 +539,13 @@ begin
                                 , (Front => True, others => False));
                                 
             Modelview.Apply_Translation (190.0, 0.0, 0.0);
-            Info_Font.Render("Degree is " & Integer'Image(My_Window.Num_Of_Knots - My_Window.Num_Of_Control_Points - 1) ,  (Front => True, others => False));
-         
+            if Calculate_B_Spline_Degree >= 0 then
+               Info_Font.Render("Degree is " & Integer'Image(Calculate_B_Spline_Degree) ,  (Front => True, others => False));
+            else
+                Gl.Immediate.Set_Color (GL.Types.Colors.Color'(1.0, 0.0, 0.0, 0.0));
+                Info_Font.Render("Error " & Integer'Image(Calculate_B_Spline_Degree) ,  (Front => True, others => False));
+                Gl.Immediate.Set_Color (GL.Types.Colors.Color'(1.0, 1.0, 1.0, 0.0));
+            end if;      
          end if;
          
          
@@ -583,8 +592,9 @@ begin
          -- Draw the curve. Use common knot values which might be relevant only
          -- to portion of algorithms.
          --    
-         Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm, My_Window.Knot_Values(1..My_Window.Num_Of_Knots));
-         
+         if My_Window.Algorithm /= De_Boor or else Calculate_B_Spline_Degree >= 0 then
+            Draw_Curve(Control_Points_For_Drawing, My_Window.Algorithm, My_Window.Knot_Values(1..My_Window.Num_Of_Knots));
+         end if;
       end;
       
       -- Draw help overlay on top of everything else
