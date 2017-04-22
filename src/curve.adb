@@ -1,6 +1,6 @@
 --  The MIT License (MIT)
 --
---  Copyright (c) 2015 artium@nihamkin.com
+--  Copyright (c) 2015-2017 artium@nihamkin.com
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@ package body Curve is
       Result : Point_Type;
    begin
       for I in Result'Range loop
-	 Result(I) := Left(I) + Right(I);
+         Result(I) := Left(I) + Right(I);
       end loop;
       
       return Result;
@@ -41,7 +41,7 @@ package body Curve is
       Result : Point_Type;
    begin
       for I in Result'Range loop
-	 Result(I) := Left(I) - Right(I);
+         Result(I) := Left(I) - Right(I);
       end loop;
       
       return Result;
@@ -51,116 +51,224 @@ package body Curve is
       Result : Point_Type;
    begin
       for I in Result'Range loop
-	 Result(I) := - Right(I);
+         Result(I) := - Right(I);
       end loop;
       
       return Result;
    end;
 
    function "*" (Left  : in Point_Type; 
-		 Right : in Base_Real_Type ) return Point_Type is
+                 Right : in Base_Real_Type ) return Point_Type is
       Result : Point_Type;
    begin      
       for I in Result'Range loop
-	 Result(I) := Right * Left(I);
+         Result(I) := Right * Left(I);
       end loop;
       
       return Result;
    end;
    
    function "*" (Left  : in Base_Real_Type; 
-		 Right : in Point_Type ) return Point_Type is 
+                 Right : in Point_Type ) return Point_Type is 
    begin
       return Right * Left;
    end;
    
    
    function Eval_De_Castelijau( Control_Points : in Control_Points_Array;
-				T              : in Parametrization_Type) return Point_Type is   
+                                T              : in Parametrization_Type) return Point_Type is   
       Temp_Points : Control_Points_Array := Control_Points;
    begin
       
-      for I in 1 .. Control_Points'Length - 1 loop	 
-	 for J in Control_Points'First .. Control_Points'Last - I loop
-	 
-	    Temp_Points(J) := T * Temp_Points(J) + (1.0-T) * Temp_Points(J+1);
-	   
-	 end loop;
+      for I in 1 .. Control_Points'Length - 1 loop         
+         for J in Control_Points'First .. Control_Points'Last - I loop
+         
+            Temp_Points(J) := T * Temp_Points(J) + (1.0-T) * Temp_Points(J+1);
+           
+         end loop;
       end loop;
-	
+        
       return Temp_Points(Temp_Points'First);
       
    end; 
-   
-   
-   function Eval_De_Boor      ( Control_Points : in Control_Points_Array;
-				Knot_Values    : in Knot_Values_Array;
-				T              : in Parametrization_Type) return Point_Type is
+
+
+   -- De Boor algorithm taken from here:
+   --     http://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/B-spline/de-Boor.html
+   --
+   --  If u lies in [uk,uk+1) and u != uk, let h = p (i.e., inserting u p times) and s = 0; 
+   --  If u = uk and uk is a knot of multiplicity s, let h = p - s (i.e., inserting u p - s times); 
+   --  Copy the affected control points Pk-s, Pk-s-1, Pk-s-2, ..., Pk-p+1 and Pk-p to a new array and rename them as Pk-s,0, Pk-s-1,0, Pk-s-2,0, ..., Pk-p+1,0; 
+   --  
+   --  for r := 1 to h do 
+   --     for i := k-p+r to k-s do  
+   --        Let ai,r = (u - ui) / ( ui+p-r+1 - ui ) 
+   --        Let Pi,r = (1 - ai,r) Pi-1,r-1 + ai,r Pi,r-1 
+   --  Pk-s,p-s is the point C(u).
+   --
+   -- Assumption: Knot_Values is sorted
+   --
+   function Eval_De_Boor      ( Control_Points        : in Control_Points_Array;
+                                Knot_Values           : in Knot_Values_Array;
+                                T                     : in Parametrization_Type;
+                                Is_Outside_The_Domain : out Boolean) return Point_Type is
+      
+      subtype Knot_Index_Type is Positive range Knot_Values'Range;
+
+      Degree : constant Natural := Knot_Values'Length - Control_Points'Length - 1;
+
+      function Alpha( I,R : in Knot_Index_Type) return Parametrization_Type is
+      begin
+         return (T - Knot_Values(I)) / (Knot_Values(I + Degree - R + 1) - Knot_Values(I));
+      end Alpha;
+
+      -- Intermidiate values 
+      --
+      type P_Type is array
+         ( Knot_Index_Type, 
+           Natural range 0 .. Degree) of Point_Type;
+      
+      S : Natural := 0; -- Mulltiplicity
+      K : Knot_Index_Type;
+      P : P_Type := (others => (others => Point_Type'(others => 0.0) ) );
+      
+      
+      
    begin
-      return ORIGIN_POINT;
+      -- Check if T is inside the domain
+      --
+      if T < Knot_Values( Knot_Values'First + Degree) or else 
+         T > Knot_Values( Knot_Values'Last  - Degree) then
+      
+          Is_Outside_The_Domain := True;
+          return ORIGIN_POINT;
+         
+      else
+         Is_Outside_The_Domain := False;
+      end if;
+      
+      --  Determine knot segment
+      --
+      K := Knot_Values'Last - Degree;
+      
+      for I in Knot_Values'First + Degree .. Knot_Values'Last - Degree - 1 loop
+         if Knot_Values( I ) <=  T and then T < Knot_Values( I + 1 ) then
+            K := I;
+         end if;        
+      end loop;
+      
+      -- Calculate multiplicity
+      --
+      S := 0;
+
+      for I in Knot_Values'Range loop
+         if Knot_Values( I ) = T then
+            S := S + 1;
+         end if;   
+      end loop;
+      
+      if S > Degree then
+
+        -- This is a special case. When the spline is clamped then 
+        -- the value "T = Knot_Values( Knot_Value'Last - Degree )" is 
+        -- outside the domain. But since we desire a nice drawing, we
+        -- extrapolate it into the last control point.
+        -- 
+        if T = Knot_Values( Knot_Values'Last ) then
+            return Control_Points( Control_Points'Last );
+        end if;
+
+         -- TODO: It is not straight clear what is the correct resolution here...
+         S := Degree;
+      end if;
+      
+      -- Prepare the points
+      --
+      for I in Knot_Index_Type range K - Degree .. K - S loop
+         P(I, 0) := Control_Points( I ); -- Assumed here that Knot_Values'First = Control_Points'First
+      end loop;
+      
+      -- Preform knot insertion H times
+      --
+      for R in Knot_Index_Type range 1 .. Degree - S loop
+         for I in Knot_Index_Type range K - Degree + R .. K - S loop
+            declare
+               A : Parametrization_Type := Alpha(I, R);
+            begin
+               P(I, R) := (1.0-A) * P(I-1, R-1) + A * P(I,R-1); 
+            end;
+         end loop;
+      end loop;
+      
+      -- Return the result
+      --
+      return P(K-S, Degree-S);
    end;
+
    
    function Eval_Catmull_Rom ( Control_Points : in Control_Points_Array;
-			       Knot           : in Positive;
-			       T              : in Parametrization_Type) return Point_Type is 
+                               Segment        : in Positive;
+                               T              : in Parametrization_Type) return Point_Type is 
       
       P0, P1, P2, P3 : Point_Type;
       
    begin
       
-      P0 := Control_Points( Knot );
-      P1 := Control_Points( Knot + 1 );
-      P2 := Control_Points( Knot + 2 );
-      P3 := Control_Points( Knot + 3 );
+      P0 := Control_Points( Segment );
+      P1 := Control_Points( Segment + 1 );
+      P2 := Control_Points( Segment + 2 );
+      P3 := Control_Points( Segment + 3 );
 
-	
+        
       return 0.5 * (
-		    (2.0 * P1) + 
-		      T * (-P0 + P2) + 
-		      T*T * (2.0 * P0 - 5.0 * P1 + 4.0 * P2 - P3) +
-		      T*T*T * (-P0 + 3.0 * P1 - 3.0 * P2 + P3) 
-		   );
+                    (2.0 * P1) + 
+                      T * (-P0 + P2) + 
+                      T*T * (2.0 * P0 - 5.0 * P1 + 4.0 * P2 - P3) +
+                      T*T*T * (-P0 + 3.0 * P1 - 3.0 * P2 + P3) 
+                   );
    end;
    
    
    function Eval_Lagrange( Control_Points      : in Control_Points_Array;
-			   Interpolation_Nodes : in Interpolation_Nodes_Array;
-			   T                   : in Parametrization_Type) return Point_Type is
+                           Interpolation_Nodes : in Interpolation_Nodes_Array;
+                           T                   : in Parametrization_Type) return Point_Type is
    
       Result : Point_Type := ORIGIN_POINT;
 
-      function Eval_Basis_Poly(J : in Positive)  return Base_Real_Type is 
-	 
-	 D : constant  Base_Real_Type := (Parametrization_Type'Last - Parametrization_Type'First) / Base_Real_Type(Control_Points'Length - 1);
-	 
-	 Numentator   : Base_Real_Type := 1.0;
-	 Denominator  : Base_Real_Type := 1.0;
+      subtype Interpolation_Nodes_Index_Type is Positive range Interpolation_Nodes'Range;
+
+      function Eval_Basis_Poly(J : in Interpolation_Nodes_Index_Type)  return Base_Real_Type is 
+         
+         D : constant  Base_Real_Type := (Parametrization_Type'Last - Parametrization_Type'First) / Base_Real_Type(Control_Points'Length - 1);
+         
+         Numentator   : Base_Real_Type := 1.0;
+         Denominator  : Base_Real_Type := 1.0;
       
       begin
-	 
-	 for M in Control_Points'Range loop
-	    
-	    if M /= J then
-	       Numentator  := Numentator  * (  T                     - Interpolation_Nodes(M) );
-	       
-	       Denominator := Denominator * ( Interpolation_Nodes(J) - Interpolation_Nodes(M) );
-	    end if;
-	 
-	 end loop;
-	   
-	 return Numentator / Denominator;
-	 
+         
+         for M in Control_Points'Range loop
+            
+            if M /= J then
+               Numentator  := Numentator  * (  T                     - Interpolation_Nodes(M) );
+               
+               Denominator := Denominator * ( Interpolation_Nodes(J) - Interpolation_Nodes(M) );
+            end if;
+         
+         end loop;
+           
+         return Numentator / Denominator;
+         
       end Eval_Basis_Poly;
-	
+        
    begin
       
       for I  in Control_Points'Range  loop
-	
-	 Result := Result + Control_Points(I) * Eval_Basis_Poly(I);
-	 
+        
+         Result := Result + Control_Points(I) * Eval_Basis_Poly(I);
+         
       end loop;
       
-      return Result;	
+      return Result;        
          
    end Eval_Lagrange;
    
@@ -175,15 +283,15 @@ package body Curve is
       Res(Res'First) := Parametrization_Type'First;
       
       if N /= 1 then
-	 
-	 for I in Res'First + 1 .. Res'Last - 1 loop
-	    
-	    Res(I) := Parametrization_Type'First + D * Base_Real_Type(I-1);
-	    
-	 end loop;
-	 
-	 Res(Res'Last) := Parametrization_Type'Last;
-	 
+         
+         for I in Res'First + 1 .. Res'Last - 1 loop
+            
+            Res(I) := Parametrization_Type'First + D * Base_Real_Type(I-1);
+            
+         end loop;
+         
+         Res(Res'Last) := Parametrization_Type'Last;
+         
       end if;
       
       return Res;
@@ -196,15 +304,15 @@ package body Curve is
    begin
       Res := (others => 0.0);
       
-      	 for K in Res'Range loop
-	    
- 	    Res(K) := 0.5 * (Parametrization_Type'First + Parametrization_Type'Last) + 
+               for K in Res'Range loop
+            
+             Res(K) := 0.5 * (Parametrization_Type'First + Parametrization_Type'Last) + 
 
-	      0.5 * (Parametrization_Type'Last - Parametrization_Type'First) * 
-	      Base_Type_Math.Cos( Ada.Numerics.PI *  Base_Real_Type(2*K - 1)  / Base_Real_Type(2*N) );
+              0.5 * (Parametrization_Type'Last - Parametrization_Type'First) * 
+              Base_Type_Math.Cos( Ada.Numerics.PI *  Base_Real_Type(2*K - 1)  / Base_Real_Type(2*N) );
     
-	 end loop;
-	 
+         end loop;
+         
       return Res;
    end;
 

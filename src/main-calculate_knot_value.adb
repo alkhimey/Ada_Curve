@@ -1,6 +1,6 @@
 --  The MIT License (MIT)
 --
---  Copyright (c) 2016 artium@nihamkin.com
+--  Copyright (c) 2017 artium@nihamkin.com
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,15 @@
 -- 
 --
 
+with GL.Types;
+
 separate (Main)
-procedure Draw_Control_Polygon(Control_Points : CRV.Control_Points_Array) is
-   
-   Token : Gl.Immediate.Input_Token := GL.Immediate.Start (Line_Strip);
+function Calculate_Knot_Value(H_Pos : in Glfw.Input.Mouse.Coordinate) return CRV.Parametrization_Type is
+   use type GL.Types.Double;
    
 begin
-    
-   Gl.Immediate.Set_Color (GL.Types.Colors.Color'(0.3, 0.3, 0.3, 0.0));
-   
-   for I in Control_Points'Range loop
-      GL.Immediate.Add_Vertex(Token, Vector2'
-                                (Control_Points(I)(CRV.X), 
-                                 Control_Points(I)(CRV.Y)));
-   end loop;         
-   
-end Draw_Control_Polygon;
+    return CRV.Parametrization_Type(
+              (GL.Types.Double(H_Pos) - KNOTS_RULER_LEFT_COORDINATE) / 
+              (KNOTS_RULER_RIGHT_COORDINATE - KNOTS_RULER_LEFT_COORDINATE)
+           );
+end Calculate_Knot_Value;
