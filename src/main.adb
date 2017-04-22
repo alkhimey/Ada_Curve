@@ -73,12 +73,6 @@ procedure Main is
    WINDOW_WIDTH : constant := 800;
    WINDOW_HEIGHT : constant := 600;
    
-   MAX_NUMBER_OF_CONTROL_POINTS : constant Positive := 99;
-   MIN_NUMBER_OF_CONTROL_POINTS : constant Positive := 4; -- For Catmull-Rom
-   
-   MAX_NUMBER_OF_KNOTS : constant Positive := 99;
-   
-   
    KNOTS_RULER_V_POS      : constant Gl.Types.Double := GL.Types.Double(WINDOW_HEIGHT) - 50.0;
    KNOTS_RULER_LEFT_COORDINATE  : constant := 100.0;
    KNOTS_RULER_RIGHT_COORDINATE : constant := GL.Types.Double(WINDOW_WIDTH) - 100.0;
@@ -88,10 +82,12 @@ procedure Main is
    
    type Algorithm_Type is (DE_CASTELIJAU, DE_BOOR, CATMULL_ROM, LAGRANGE_EQUIDISTANT, LAGRANGE_CHEBYSHEV);
    
+   subtype Num_Of_Control_Points_Type is Positive range 4 .. 99; -- Minumum 4 because of Catmull-Rom
+   subtype Num_Of_Knots_Type          is Positive range 1 .. 99;
    
    type Test_Window is new Glfw.Windows.Window with record
       
-      Control_Points : CRV.Control_Points_Array(1..MAX_NUMBER_OF_CONTROL_POINTS) := 
+      Control_Points : CRV.Control_Points_Array(1..Num_Of_Control_Points_Type'Last) := 
         (1 => (CRV.X => 100.0, CRV.Y => 100.0),
          2 => (CRV.X => 50.0,  CRV.Y => 200.0),
          3 => (CRV.X => 100.0, CRV.Y => 300.0),
@@ -103,7 +99,7 @@ procedure Main is
       -- Note to self - this was bad idea to use static array of maximal size and a sepearte value to 
       -- represent it's actual size.
       --
-      Num_Of_Control_Points : Positive range 1 .. MAX_NUMBER_OF_CONTROL_POINTS := 6;
+      Num_Of_Control_Points : Num_Of_Control_Points_Type := 6;
       
       Original_X, Original_Y : GL.Types.Double := 0.0;
       Delta_X, Delta_Y : GL.Types.Double := 0.0;
@@ -117,7 +113,7 @@ procedure Main is
       
       Display_Control_Polygon : Boolean := True;
       
-      Knot_Values : CRV.Knot_Values_Array (1 .. MAX_NUMBER_OF_KNOTS) := 
+      Knot_Values : CRV.Knot_Values_Array (1 .. Num_Of_Knots_Type'Last) := 
          (1  => 0.0, 
           2  => 0.1, 
           3  => 0.2, 
@@ -130,7 +126,7 @@ procedure Main is
           10 => 0.9,
           others => 0.0);
       
-      Num_Of_Knots : Positive range 1 .. MAX_NUMBER_OF_KNOTS := 10; 
+      Num_Of_Knots : Num_Of_Knots_Type := 10; 
       
       Selected_Knot, Hovered_Knot : Natural := 0;
       
@@ -144,6 +140,8 @@ procedure Main is
    function Calculate_Knot_Value(H_Pos : in Glfw.Input.Mouse.Coordinate) return CRV.Parametrization_Type;
       
    function Calculate_B_Spline_Degree return Integer;
+   procedure Uniformise_Knot_Vector(V     : in out CRV.Knot_Values_Array;
+                                   Degree : in Integer); 
    
    -- Overrides
    --------------------------- 
@@ -262,22 +260,22 @@ procedure Main is
          -- Remove point
          if Object.Hovered_Point /= 0 then
             
-            if Object.Num_Of_Control_Points > MIN_NUMBER_OF_CONTROL_POINTS then
-               
+            if Object.Num_Of_Control_Points > Num_Of_Control_Points_Type'First then
                for I in Positive range Object.Hovered_Point .. Object.Num_Of_Control_Points - 1 loop
                   Object.Control_Points(I) := Object.Control_Points(I + 1);
                end loop;
                Object.Num_Of_Control_Points := Object.Num_Of_Control_Points - 1;   
-               
             end if;
          
          -- Remove knot
          elsif Object.Hovered_Knot /= 0 then 
          
-            for I in Positive range Object.Hovered_Knot .. Object.Num_Of_Knots - 1 loop
-               Object.Knot_Values(I) := Object.Knot_Values(I + 1);
-            end loop;
-            Object.Num_Of_Knots := Object.Num_Of_Knots - 1;  
+            if Object.Num_Of_Knots > Num_Of_Knots_Type'First then 
+               for I in Positive range Object.Hovered_Knot .. Object.Num_Of_Knots - 1 loop
+                  Object.Knot_Values(I) := Object.Knot_Values(I + 1);
+               end loop;
+               Object.Num_Of_Knots := Object.Num_Of_Knots - 1;  
+            end if;
             
          -- Add knot
          elsif Object.Hovered_Ruler then
@@ -309,7 +307,7 @@ procedure Main is
             end;
          -- Add point
          else            
-            if Object.Num_Of_Control_Points < MAX_NUMBER_OF_CONTROL_POINTS and then
+            if Object.Num_Of_Control_Points < Num_Of_Control_Points_Type'Last and then
               X >= 0.0 and then X <= Glfw.Input.Mouse.Coordinate(WINDOW_WIDTH) and then 
               Y >= 0.0 and then Y <= Glfw.Input.Mouse.Coordinate(WINDOW_HEIGHT) then
                
@@ -402,14 +400,17 @@ procedure Main is
                Object.Disable_Callback (Glfw.Windows.Callbacks.Mouse_Position);
                Object.Disable_Callback (Glfw.Windows.Callbacks.Mouse_Button);
             end if;
+         elsif Key = Glfw.Input.Keys.U then
+            if Object.Algorithm = De_Boor then 
+               Uniformise_Knot_Vector(V      => Object.Knot_Values(Object.Knot_Values'First .. Object.Num_Of_Knots), 
+                                      Degree => Calculate_B_Spline_Degree);
+            end if;
          end if;
       end if;
       
       if Action = Glfw.Input.Keys.Release then 
-               if Key = Glfw.Input.Keys.H then
-            
+         if Key = Glfw.Input.Keys.H then   
             Object.Help_Overlay_Required := False;
-            
          end if;
       end if;
       
@@ -462,6 +463,24 @@ procedure Main is
       return My_Window.Num_Of_Knots - My_Window.Num_Of_Control_Points - 1;
    end;
 
+   procedure Uniformise_Knot_Vector(V     : in out CRV.Knot_Values_Array; 
+                                   Degree : in Integer) is
+   begin
+      if V'Last >= 2*(Degree + 1) then 
+     
+         V(V'First .. V'First + Degree) := (others => 0.0);
+          
+         for I in 1 .. V'Last - 2*(Degree + 1) loop
+            V(V'First + Degree + I) := CRV.Parametrization_Type(
+                       Float(I) / 
+                       Float(V'Last - 2*(Degree + 1) + 1)
+                    );
+         end loop;   
+          
+         V(V'Last - Degree .. V'Last) := (others => 1.0);
+      
+      end if;
+   end;
 begin
    
    Glfw.Init;
@@ -525,7 +544,7 @@ begin
          Modelview.Apply_Translation (250.0, 0.0, 0.0);
          Info_Font.Render (Ada.Strings.Fixed.Trim(Integer'Image(My_Window.Num_Of_Control_Points), Ada.Strings.Left) &
                              " / " &
-                             Ada.Strings.Fixed.Trim(Integer'Image(MAX_NUMBER_OF_CONTROL_POINTS), Ada.Strings.Left)  &
+                             Ada.Strings.Fixed.Trim(Integer'Image(Num_Of_Control_Points_Type'Last), Ada.Strings.Left)  &
                              " Points"
                              , (Front => True, others => False));
          
