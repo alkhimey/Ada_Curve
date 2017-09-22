@@ -19,6 +19,16 @@ Fun and experimentation with curve drawing algorithms using Ada.
 
 One needs to install cmake to build glfw3 and gprbuild to build OpenGLAda. 
 
+On a mint Ubuntu 17.04 (Zesty Zapous) installing the followinng was sufficient (no need to build glfw3 from sources):
+
+```
+sudo apt-get install gnat-6 gprbuild
+sudo apt-get install libglfw3 libftgl2
+sudo apt-get install libglfw3-dev libftgl-dev
+sudo apt-get install libxcursor1 libxinerama1 libxi6
+sudo apt-get install libxcursor-dev libxinerama-dev libxi-dev
+```
+
 ## Clone
 
 In order to recieve the OpenGLAda submodule, you need to clone recursively:
